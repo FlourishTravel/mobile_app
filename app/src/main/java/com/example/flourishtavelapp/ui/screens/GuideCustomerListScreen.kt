@@ -58,61 +58,15 @@ fun GuideCustomerListScreen(
                 )
                 .padding(horizontal = 20.dp, vertical = 20.dp)
         ) {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Column {
-                        Text(
-                            "Danh sách khách",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            tour.name,
-                            color = Color.White.copy(alpha = 0.75f),
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Stats row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    CustomerStatChip(
-                        modifier = Modifier.weight(1f),
-                        label = "Tổng nhóm",
-                        value = "${tour.customers.size}",
-                        icon = Icons.Default.Groups,
-                        color = Color.White
-                    )
-                    CustomerStatChip(
-                        modifier = Modifier.weight(1f),
-                        label = "Tổng người",
-                        value = "$totalPeople",
-                        icon = Icons.Default.Person,
-                        color = Color.White
-                    )
-                    CustomerStatChip(
-                        modifier = Modifier.weight(1f),
-                        label = "Đã thanh toán",
-                        value = "$paidCount",
-                        icon = Icons.Default.CheckCircle,
-                        color = Color(0xFF69F0AE)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
                     )
                 }
             }
