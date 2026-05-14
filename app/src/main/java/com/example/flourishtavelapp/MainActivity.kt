@@ -26,7 +26,8 @@ class MainActivity : ComponentActivity() {
 }
 
 enum class NavigationState {
-    Login, Register, MainApp, TourDetail, BookingReview, PaymentInfo, BankTransfer, BookingSuccess
+    Login, Register, MainApp, TourDetail, BookingReview, PaymentInfo, BankTransfer, BookingSuccess,
+    GuideHome, GuideTourDetail, GuideCustomerList
 }
 
 @Composable
@@ -34,6 +35,11 @@ fun AppNavigation() {
     var navState by remember { mutableStateOf(NavigationState.MainApp) }
     var selectedTab by remember { mutableIntStateOf(0) }
     var isLoggedIn by remember { mutableStateOf(false) }
+    var isGuideLoggedIn by remember { mutableStateOf(false) }
+
+    // Guide State
+    val currentGuide = com.example.flourishtavelapp.ui.screens.mockGuideAccounts.first()
+    var selectedGuideTour by remember { mutableStateOf<com.example.flourishtavelapp.ui.screens.GuideTour?>(null) }
     
     // User Profile State
     var userName by remember { mutableStateOf("Bảo") }
@@ -75,6 +81,10 @@ fun AppNavigation() {
                 onLoginSuccess = {
                     isLoggedIn = true
                     navState = NavigationState.MainApp
+                },
+                onGuideLoginSuccess = {
+                    isGuideLoggedIn = true
+                    navState = NavigationState.GuideHome
                 },
                 onRegisterClick = { navState = NavigationState.Register },
                 onBack = { 
@@ -137,6 +147,43 @@ fun AppNavigation() {
                 gender = bookingGender,
                 onHomeClick = onBackToHome
             )
+            // ── Guide Screens ──────────────────────────────────────────────
+            NavigationState.GuideHome -> GuideHomeScreen(
+                guide = currentGuide,
+                modifier = Modifier.padding(innerPadding),
+                onTourClick = { tour ->
+                    selectedGuideTour = tour
+                    navState = NavigationState.GuideTourDetail
+                },
+                onLogout = {
+                    isGuideLoggedIn = false
+                    navState = NavigationState.MainApp
+                    selectedTab = 0
+                }
+            )
+            NavigationState.GuideTourDetail -> {
+                val tour = selectedGuideTour
+                if (tour != null) {
+                    GuideTourDetailScreen(
+                        tour = tour,
+                        onBack = { navState = NavigationState.GuideHome },
+                        onCustomerListClick = { navState = NavigationState.GuideCustomerList }
+                    )
+                } else {
+                    LaunchedEffect(Unit) { navState = NavigationState.GuideHome }
+                }
+            }
+            NavigationState.GuideCustomerList -> {
+                val tour = selectedGuideTour
+                if (tour != null) {
+                    GuideCustomerListScreen(
+                        tour = tour,
+                        onBack = { navState = NavigationState.GuideTourDetail }
+                    )
+                } else {
+                    LaunchedEffect(Unit) { navState = NavigationState.GuideHome }
+                }
+            }
             NavigationState.MainApp -> {
                 when (selectedTab) {
                     0 -> HomepageScreen(

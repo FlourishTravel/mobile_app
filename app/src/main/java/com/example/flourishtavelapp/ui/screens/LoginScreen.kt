@@ -23,6 +23,7 @@ import com.example.flourishtavelapp.ui.theme.*
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
+    onGuideLoginSuccess: () -> Unit = {},
     onRegisterClick: () -> Unit,
     onBack: () -> Unit = {}
 ) {
@@ -111,7 +112,7 @@ fun LoginScreen(
                         username = it
                         showError = false
                     },
-                    placeholder = "Nhập tài khoản (bao123)",
+                    placeholder = "Khách: bao123 | Guide: guide123",
                     icon = Icons.Default.Person
                 )
                 
@@ -155,10 +156,16 @@ fun LoginScreen(
                 // Login Button
                 Button(
                     onClick = {
-                        if (username == "bao123" && password == "bao123") {
-                            onLoginSuccess()
-                        } else {
-                            showError = true
+                        when {
+                            username == "guide123" && password == "guide123" -> {
+                                onGuideLoginSuccess()
+                            }
+                            username == "bao123" && password == "bao123" -> {
+                                onLoginSuccess()
+                            }
+                            else -> {
+                                showError = true
+                            }
                         }
                     },
                     modifier = Modifier
