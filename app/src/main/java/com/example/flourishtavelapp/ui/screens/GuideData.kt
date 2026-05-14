@@ -60,6 +60,21 @@ enum class PaymentStatus(val label: String, val color: Long) {
     DEPOSIT("Đặt cọc 30%", 0xFF1565C0)
 }
 
+enum class ScheduleStatus(val label: String, val color: Long) {
+    AVAILABLE("Có thể đi", 0xFF4CAF50),
+    BOOKED("Đã book", 0xFF1565C0),
+    ASSIGNED("Đã phân tour", 0xFF00796B),
+    OFF("Nghỉ", 0xFF9E9E9E)
+}
+
+data class GuideScheduleDay(
+    val day: Int,
+    val month: Int,
+    val year: Int,
+    val status: ScheduleStatus = ScheduleStatus.AVAILABLE,
+    val assignedTourName: String? = null
+)
+
 // ─── Mock Data ───────────────────────────────────────────────────────────────
 
 val mockGuideAccounts = listOf(
