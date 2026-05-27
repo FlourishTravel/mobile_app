@@ -10,285 +10,429 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.AirplaneTicket
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.flourishtavelapp.R
 import com.example.flourishtavelapp.ui.theme.*
-import com.example.flourishtavelapp.ui.components.TourCard
-import com.example.flourishtavelapp.ui.components.SmallCuratedCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomepageScreen(
-    userName: String, 
-    modifier: Modifier = Modifier, 
+    userName: String,
+    modifier: Modifier = Modifier,
     onBack: () -> Unit,
     onTourClick: () -> Unit,
     onAssistantClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onCategoryClick: (String) -> Unit
 ) {
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .background(NatureGreenBackground)
-            .verticalScroll(rememberScrollState())
+            .background(Color.White)
     ) {
-        // Top Bar
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = DarkTextColor
-                    )
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "Flourish",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkTextColor
-                )
-            }
-            Surface(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clickable { onProfileClick() },
-                shape = CircleShape,
-                color = Color.DarkGray
-            ) {
-                Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.padding(8.dp))
-            }
-        }
-
-        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-            // Welcome Section
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Chào $userName, cùng khám phá!",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp,
-                    color = DarkTextColor
-                )
-            )
-            Text(
-                text = "Hành trình tiếp theo của bạn bắt đầu từ đây.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = SecondaryTextColor
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Search Bar
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(30.dp),
-                color = Color.White,
-                shadowElevation = 0.dp
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Search, null, tint = DarkTextColor.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text("Bạn muốn đi đâu?", color = SecondaryTextColor, fontSize = 16.sp)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // AI Assistant Card
-            Card(
-                modifier = Modifier.fillMaxWidth().clickable { onAssistantClick() },
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                ) {
-                    Image(
-                        painter = painterResource(id = com.example.flourishtavelapp.R.drawable.ai_bg),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                    // Added a dark gradient overlay instead of red for better readability without red tint
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(Color.Black.copy(alpha = 0.1f), Color.Black.copy(alpha = 0.4f))
-                                )
-                            )
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxSize().padding(24.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Bắt đầu Trợ lý Chuyến đi",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp
-                            )
-                            Text(
-                                text = "Hãy để AI lập kế hoạch cho chuyến đi mơ ước của bạn",
-                                color = Color.White.copy(alpha = 0.9f),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        Surface(
-                            modifier = Modifier.size(44.dp),
-                            shape = CircleShape,
-                            color = Color.White.copy(alpha = 0.3f)
-                        ) {
-                            Icon(Icons.Default.SmartToy, null, tint = Color.White, modifier = Modifier.padding(10.dp))
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Featured Tours Header
+            // ── Top Bar: "Khám phá" + Search + Avatar ──
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Tour nổi bật",
+                    text = "Khám phá",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
                     color = DarkTextColor
                 )
-                Text(
-                    "Xem tất cả",
-                    color = Color(0xFF00796B),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { onTourClick() }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { }) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = DarkTextColor
+                        )
+                    }
+                    Surface(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clickable { onProfileClick() },
+                        shape = CircleShape,
+                        color = PrimaryGreen
+                    ) {
+                        Icon(
+                            Icons.Default.Person,
+                            null,
+                            tint = Color.White,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                }
+            }
+
+            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                // ── Quick Action Icons ──
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFF5F5F5)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp, horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        QuickActionItem(icon = Icons.AutoMirrored.Outlined.AirplaneTicket, label = "Visa", onClick = { onCategoryClick("Visa") })
+                        QuickActionItem(icon = Icons.Outlined.DirectionsBus, label = "Transport", onClick = { onCategoryClick("Transport") })
+                        QuickActionItem(icon = Icons.Outlined.CurrencyExchange, label = "Currency", onClick = { onCategoryClick("Currency") })
+                        QuickActionItem(icon = Icons.Outlined.Cloud, label = "Weather", onClick = { onCategoryClick("Weather") })
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ── Chuyến đi nổi bật ──
+            Text(
+                "Chuyến đi nổi bật",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = DarkTextColor,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp)
+            ) {
+                item {
+                    FeaturedTourCard(
+                        title = "Kỳ quan Bangkok",
+                        subtitle = "Grand Palace & Wat Arun",
+                        price = "2.490.000đ",
+                        rating = "4.9",
+                        badge = "Bán chạy nhất",
+                        badgeColor = PrimaryGreen,
+                        imageRes = R.drawable.bangkook_bg,
+                        onClick = { onCategoryClick("Kỳ quan Bangkok") }
+                    )
+                }
+                item {
+                    FeaturedTourCard(
+                        title = "Đảo Phi Phi",
+                        subtitle = "Lặn biển & hoàng hôn",
+                        price = "3.150.000đ",
+                        rating = null,
+                        badge = "Tour biển",
+                        badgeColor = Color(0xFF2196F3),
+                        imageRes = R.drawable.phiphi_bg,
+                        onClick = { onCategoryClick("Đảo Phi Phi") }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ── Khám phá theo vùng ──
+            Text(
+                "Khám phá theo vùng",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = DarkTextColor,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Region grid: 2 columns
+            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    RegionCard(
+                        name = "Chiang Mai",
+                        imageRes = R.drawable.chiangmai_bg,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(140.dp),
+                        onClick = { onCategoryClick("Chiang Mai") }
+                    )
+                    RegionCard(
+                        name = "Phuket",
+                        imageRes = R.drawable.phuket_bg,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(140.dp),
+                        onClick = { onCategoryClick("Phuket") }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    RegionCard(
+                        name = "Bangkok",
+                        imageRes = R.drawable.bangkook_bg,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(140.dp),
+                        onClick = { onCategoryClick("Bangkok") }
+                    )
+                    RegionCard(
+                        name = "Pattaya",
+                        imageRes = R.drawable.venezia_bg,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(140.dp),
+                        onClick = { onCategoryClick("Pattaya") }
+                    )
+                }
+            }
+
+            // Bottom spacing for FAB and nav bar
+            Spacer(modifier = Modifier.height(80.dp))
+        }
+
+        // ── Floating AI Assistant Bubble ──
+        FloatingActionButton(
+            onClick = onAssistantClick,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 20.dp, end = 20.dp)
+                .size(60.dp),
+            shape = CircleShape,
+            containerColor = Color.Transparent,
+            elevation = FloatingActionButtonDefaults.elevation(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF1A3C34),
+                                Color(0xFF2D5A4E)
+                            )
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SmartToy,
+                    contentDescription = "Trợ lý AI",
+                    tint = Color.White,
+                    modifier = Modifier.size(30.dp)
                 )
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Horizontal Tour List
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                item {
-                    Box(modifier = Modifier.clickable { onTourClick() }) {
-                        TourCard(
-                            title = "Xứ sở chùa vàng",
-                            location = "Bangkook, Thái Lan",
-                            price = "$500",
-                            imageRes = com.example.flourishtavelapp.R.drawable.bangkook_bg
-                        )
-                    }
-                }
-                item {
-                    Box(modifier = Modifier.clickable { onTourClick() }) {
-                        TourCard(
-                            title = "Zen Forest",
-                            location = "Ubud, Bali",
-                            price = "$890",
-                            imageRes = com.example.flourishtavelapp.R.drawable.venezia_bg
-                        )
-                    }
-                }
+// ── Quick Action Item ──
+@Composable
+private fun QuickActionItem(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.clickable { onClick() }
+    ) {
+        Surface(
+            modifier = Modifier.size(44.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = Color.White
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    icon,
+                    contentDescription = label,
+                    tint = Color(0xFF555555),
+                    modifier = Modifier.size(22.dp)
+                )
             }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = SecondaryTextColor,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Curated Section
-            Text(
-                "Dành riêng cho bạn",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = DarkTextColor
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Large Curated Card
-            Card(
+// ── Featured Tour Card ──
+@Composable
+private fun FeaturedTourCard(
+    title: String,
+    subtitle: String,
+    price: String,
+    rating: String?,
+    badge: String,
+    badgeColor: Color,
+    imageRes: Int,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(200.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
-                    .clickable { onTourClick() },
-                shape = RoundedCornerShape(24.dp)
+                    .height(140.dp)
             ) {
-                Box {
-                    Image(
-                        painter = painterResource(id = com.example.flourishtavelapp.R.drawable.travel_bg),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                Image(
+                    painter = painterResource(id = imageRes),
+                    contentDescription = title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                // Badge
+                Surface(
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .align(Alignment.TopStart),
+                    shape = RoundedCornerShape(8.dp),
+                    color = badgeColor
+                ) {
+                    Text(
+                        text = badge,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f))
-                                )
+                }
+            }
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = DarkTextColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    subtitle,
+                    color = SecondaryTextColor,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        price,
+                        color = PrimaryGreen,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                    if (rating != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Star,
+                                null,
+                                tint = Color(0xFFFFC107),
+                                modifier = Modifier.size(14.dp)
                             )
-                    )
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(20.dp)
-                    ) {
-                        Text("Chỗ ở bền vững", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp)
-                        Text("Sang trọng và thân thiện với môi trường", color = Color.White.copy(alpha = 0.9f))
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                rating,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = DarkTextColor
+                            )
+                        }
                     }
                 }
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Small Curated Cards
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                SmallCuratedCard(
-                    modifier = Modifier.weight(1f).clickable { onTourClick() },
-                    icon = Icons.Default.Favorite,
-                    title = "Yêu thích nhất",
-                    iconColor = Color(0xFF4CAF50),
-                    iconBg = Color(0xFFC8E6C9)
-                )
-                SmallCuratedCard(
-                    modifier = Modifier.weight(1f).clickable { onTourClick() },
-                    icon = Icons.Default.Diamond,
-                    title = "Điểm đến tiềm năng",
-                    iconColor = Color(0xFF03A9F4),
-                    iconBg = Color(0xFFB3E5FC)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(40.dp))
+// ── Region Card ──
+@Composable
+private fun RegionCard(
+    name: String,
+    imageRes: Int,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier.clickable { onClick() },
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(id = imageRes),
+                contentDescription = name,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            // Gradient overlay at bottom
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.55f)
+                            )
+                        )
+                    )
+            )
+            Text(
+                text = name,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp),
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
         }
     }
 }

@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
 
 enum class NavigationState {
     Login, Register, MainApp, TourDetail, BookingReview, PaymentInfo, BankTransfer, BookingSuccess,
-    GuideHome, GuideTourDetail, GuideCustomerList
+    GuideHome, GuideTourDetail, GuideCustomerList, Activities
 }
 
 @Composable
@@ -36,6 +36,7 @@ fun AppNavigation() {
     var selectedTab by remember { mutableIntStateOf(0) }
     var isLoggedIn by remember { mutableStateOf(false) }
     var isGuideLoggedIn by remember { mutableStateOf(false) }
+    var selectedCategoryForActivities by remember { mutableStateOf("") }
 
     // Guide State
     val currentGuide = com.example.flourishtavelapp.ui.screens.mockGuideAccounts.first()
@@ -147,6 +148,11 @@ fun AppNavigation() {
                 gender = bookingGender,
                 onHomeClick = onBackToHome
             )
+            NavigationState.Activities -> ActivitiesScreen(
+                initialCategoryLabel = selectedCategoryForActivities,
+                onBack = { navState = NavigationState.MainApp },
+                onActivityClick = { navState = NavigationState.TourDetail }
+            )
             // ── Guide Screens ──────────────────────────────────────────────
             NavigationState.GuideHome -> GuideHomeScreen(
                 guide = currentGuide,
@@ -204,7 +210,11 @@ fun AppNavigation() {
                                 selectedTab = 2
                             }
                         },
-                        onProfileClick = onGoToProfile
+                        onProfileClick = onGoToProfile,
+                        onCategoryClick = { category ->
+                            selectedCategoryForActivities = category
+                            navState = NavigationState.Activities
+                        }
                     )
                     1 -> {
                         if (isLoggedIn) {
