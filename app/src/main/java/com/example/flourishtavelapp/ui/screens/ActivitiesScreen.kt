@@ -370,6 +370,7 @@ fun ActivityListItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .then(
                 if (isFeatured) {
