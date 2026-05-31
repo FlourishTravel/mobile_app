@@ -14,11 +14,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flourishtavelapp.ui.theme.*
@@ -37,316 +40,546 @@ fun ProfileScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit
 ) {
-    var isEditingMain by remember { mutableStateOf(false) }
-    var isEditingDetails by remember { mutableStateOf(false) }
-    
-    // Local states for editing
-    var tempName by remember { mutableStateOf(userName) }
-    var tempHandle by remember { mutableStateOf(userHandle) }
-    var tempEmail by remember { mutableStateOf(userEmail) }
-    var tempPhone by remember { mutableStateOf(userPhone) }
-    var tempAddress by remember { mutableStateOf(userAddress) }
-    var tempNotification by remember { mutableStateOf(notificationEnabled) }
+    // Control dialogs
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var shakeToReport by remember { mutableStateOf(false) }
+
+    // Sync input states using key bindings
+    var tempName by remember(userName) { mutableStateOf(userName) }
+    var tempHandle by remember(userHandle) { mutableStateOf(userHandle) }
+    var tempEmail by remember(userEmail) { mutableStateOf(userEmail) }
+    var tempPhone by remember(userPhone) { mutableStateOf(userPhone) }
+    var tempAddress by remember(userAddress) { mutableStateOf(userAddress) }
+    var tempNotification by remember(notificationEnabled) { mutableStateOf(notificationEnabled) }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(NatureGreenBackground)
-            .verticalScroll(rememberScrollState())
+            .background(Color(0xFFF3F5F9)) // Premium Light grey-blue background
     ) {
-        // Top Bar
-        Row(
+        // 1. Pinned Brown Gradient Header (Bronze Accent)
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color(0xFF9E6549), Color(0xFF7D4329))
+                    )
+                )
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 20.dp)
         ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = DarkTextColor)
-            }
-            Text(
-                text = "Hồ sơ",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = DarkTextColor
-            )
-            IconButton(onClick = { /* Settings */ }) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = DarkTextColor)
-            }
-        }
-
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Profile Image Section
-            Box(contentAlignment = Alignment.BottomCenter) {
-                Box(contentAlignment = Alignment.Center) {
-                    Surface(
-                        modifier = Modifier.size(140.dp).padding(8.dp),
-                        shape = CircleShape,
-                        border = BorderStroke(2.dp, Color.White),
-                        color = Color.Black
-                    ) {
-                        // Placeholder for Fox Avatar
-                        Icon(
-                            Icons.Default.Face,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.padding(20.dp)
-                        )
-                    }
-                    // Camera Icon Overlay for changing image
-                    Surface(
-                        modifier = Modifier.size(40.dp).offset(x = 45.dp, y = 35.dp).clickable { /* Action to change image */ },
-                        shape = CircleShape,
-                        color = Color.White,
-                        shadowElevation = 4.dp
-                    ) {
-                        Icon(Icons.Default.CameraAlt, null, tint = PrimaryGreen, modifier = Modifier.padding(8.dp))
-                    }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Back navigation arrow
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
                 }
                 
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = PrimaryGreen,
-                    modifier = Modifier.offset(y = 10.dp)
-                ) {
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "PRO TRAVELER",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        text = "Chào mừng, $userName",
                         color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 19.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = userEmail,
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 13.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // VIP Bronze Badge
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.White)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .background(Color.Black)
+                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFB300),
+                            modifier = Modifier.size(10.dp)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = "VIP",
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 10.sp
+                        )
+                    }
+                    Text(
+                        text = "Bronze",
+                        color = Color.Black,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp
+                        fontSize = 10.sp,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                     )
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // User Name & Handle Section
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    if (isEditingMain) {
-                        OutlinedTextField(
-                            value = tempName,
-                            onValueChange = { tempName = it },
-                            label = { Text("Tên hiển thị") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = tempHandle,
-                            onValueChange = { tempHandle = it },
-                            label = { Text("Username (@...)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = {
-                                onProfileUpdate(tempName, tempHandle, tempEmail, tempPhone, tempAddress, tempNotification)
-                                isEditingMain = false
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
-                        ) {
-                            Text("Lưu thay đổi")
-                        }
-                    } else {
-                        Text(
-                            text = userName,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = DarkTextColor
-                        )
-                        Text(
-                            text = userHandle,
-                            color = SecondaryTextColor,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TextButton(onClick = { isEditingMain = true }) {
-                            Icon(Icons.Default.Edit, null, modifier = Modifier.size(16.dp), tint = PrimaryGreen)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Chỉnh sửa tên & username", fontSize = 12.sp, color = PrimaryGreen)
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Personal Info Section
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Person, null, tint = PrimaryGreen, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Thông tin cá nhân", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        }
-                        IconButton(onClick = { isEditingDetails = !isEditingDetails }) {
-                            Icon(if (isEditingDetails) Icons.Default.Close else Icons.Default.Edit, null, tint = SecondaryTextColor)
-                        }
-                    }
-                    
-                    if (isEditingDetails) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        OutlinedTextField(value = tempEmail, onValueChange = { tempEmail = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(value = tempPhone, onValueChange = { tempPhone = it }, label = { Text("Số điện thoại") }, modifier = Modifier.fillMaxWidth())
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(value = tempAddress, onValueChange = { tempAddress = it }, label = { Text("Địa chỉ") }, modifier = Modifier.fillMaxWidth())
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = {
-                                onProfileUpdate(tempName, tempHandle, tempEmail, tempPhone, tempAddress, tempNotification)
-                                isEditingDetails = false
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
-                        ) {
-                            Text("Lưu thông tin")
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        InfoRow(Icons.Default.Email, "Email", userEmail)
-                        InfoRow(Icons.Default.Phone, "SĐT", userPhone)
-                        InfoRow(Icons.Default.LocationOn, "Địa chỉ", userAddress)
-                    }
-                }
-            }
-
+        // 2. Scrollable Cards List
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+        ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Notifications Section
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
+            // Card 1: Phần thưởng và tiết kiệm (Rewards & Savings)
+            ProfileCard(title = "Phần thưởng và tiết kiệm") {
+                ProfileRowItem(
+                    icon = Icons.Outlined.ConfirmationNumber,
+                    title = "Khuyến mãi"
+                )
+                ProfileRowItem(
+                    icon = Icons.Outlined.Payments,
+                    title = "Thưởng hoàn tiền mặt",
+                    rightText = "0 đ"
+                )
+                ProfileRowItem(
+                    icon = Icons.Outlined.Paid,
+                    title = "Tiền Agoda",
+                    rightText = "0 đ"
+                )
+            }
+
+            // Card 2: Tài khoản của tôi (My Account)
+            ProfileCard(title = "Tài khoản của tôi") {
+                ProfileRowItem(
+                    icon = Icons.Default.Person,
+                    title = "Hồ sơ",
+                    onClick = { showEditDialog = true }
+                )
+                ProfileRowItem(
+                    icon = Icons.Outlined.Comment,
+                    title = "Tin nhắn từ cơ sở lưu trú"
+                )
+                ProfileRowItem(
+                    icon = Icons.Outlined.FavoriteBorder,
+                    title = "Danh sách yêu thích"
+                )
+                ProfileRowItem(
+                    icon = Icons.Outlined.CreditCard,
+                    title = "Thông tin thẻ đã lưu của tôi"
+                )
+                ProfileRowItem(
+                    icon = Icons.Outlined.RateReview,
+                    title = "Nhận xét của tôi"
+                )
+            }
+
+            // Card 3: Quyền lợi thành viên (Member Benefits)
+            ProfileCard(title = "Quyền lợi thành viên") {
+                ProfileRowItem(
+                    icon = Icons.Default.Stars,
+                    title = "AgodaVIP"
+                )
+                
+                // PointsMAX item with custom letter 'P' icon matching the style
                 Row(
-                    modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Notifications, null, tint = PrimaryGreen, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text("Cài đặt thông báo", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            Text("Cảnh báo, tin tức, cập nhật", color = SecondaryTextColor, fontSize = 12.sp)
-                        }
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .background(Color(0xFF2C3E50), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "P",
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 11.sp
+                        )
                     }
-                    Switch(
-                        checked = tempNotification,
-                        onCheckedChange = { 
-                            tempNotification = it
-                            onProfileUpdate(tempName, tempHandle, tempEmail, tempPhone, tempAddress, it)
-                        },
-                        colors = SwitchDefaults.colors(checkedThumbColor = PrimaryGreen)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "PointsMAX",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = Color(0xFF1E293B)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            // Logout Button
-            Button(
-                onClick = onLogout,
-                modifier = Modifier.padding(bottom = 60.dp).height(50.dp).padding(horizontal = 40.dp),
-                shape = RoundedCornerShape(25.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.1f), contentColor = Color.Red)
-            ) {
-                Icon(Icons.AutoMirrored.Filled.Logout, null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Đăng xuất tài khoản", fontWeight = FontWeight.Bold)
+            // Card 4: Cài đặt (Settings)
+            ProfileCard(title = "Cài đặt") {
+                ProfileRowItem(
+                    icon = Icons.Default.Language,
+                    title = "Ngôn ngữ",
+                    rightText = "Tiếng Việt 🇻🇳"
+                )
+                ProfileRowItem(
+                    icon = Icons.Outlined.LocalOffer,
+                    title = "Giá hiển thị",
+                    rightText = "Theo mỗi đêm"
+                )
+                
+                // Underlined currency 'đ' text
+                val currencyText = buildAnnotatedString {
+                    withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
+                        append("đ")
+                    }
+                    append(" | VND")
+                }
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CurrencyExchange,
+                        contentDescription = null,
+                        tint = Color(0xFF2C3E50),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Tiền tệ",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = Color(0xFF1E293B)
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = currencyText,
+                        color = Color(0xFF64748B),
+                        fontSize = 14.sp
+                    )
+                }
+
+                ProfileRowItem(
+                    icon = Icons.Default.LocationOn,
+                    title = "Khoảng cách",
+                    rightText = "km"
+                )
+                ProfileRowItem(
+                    icon = Icons.Outlined.Notifications,
+                    title = "Thông báo",
+                    rightText = if (tempNotification) "Bật" else "Tắt",
+                    onClick = {
+                        tempNotification = !tempNotification
+                        onProfileUpdate(tempName, tempHandle, tempEmail, tempPhone, tempAddress, tempNotification)
+                    }
+                )
+
+                // Lắc điện thoại để báo cáo lỗi
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Smartphone,
+                        contentDescription = null,
+                        tint = Color(0xFF2C3E50),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Lắc điện thoại để báo cáo lỗi",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = Color(0xFF007AFF),
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clickable { }
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = shakeToReport,
+                        onCheckedChange = { shakeToReport = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFF5D4037)
+                        )
+                    )
+                }
             }
+
+            // Card 5: Đăng cơ sở lưu trú của mình lên Agoda
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .clickable { },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Home,
+                        contentDescription = null,
+                        tint = Color(0xFF008234),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Đăng cơ sở lưu trú của mình lên Agoda",
+                        color = Color(0xFF008234),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 15.sp
+                    )
+                }
+            }
+
+            // Card 6: Trợ giúp và thông tin (Help & Info)
+            ProfileCard(title = "Trợ giúp và thông tin") {
+                ProfileRowItem(
+                    icon = Icons.Default.Info,
+                    title = "Về chúng tôi"
+                )
+                ProfileRowItem(
+                    icon = Icons.Default.HeadsetMic,
+                    title = "Trung tâm Trợ giúp"
+                )
+            }
+
+            // Card 7: Quản lý tài khoản (Account Management)
+            ProfileCard(title = "Quản lý tài khoản") {
+                ProfileRowItem(
+                    icon = Icons.Default.Delete,
+                    title = "Xóa Tài Khoản",
+                    onClick = { showDeleteConfirmDialog = true }
+                )
+                ProfileRowItem(
+                    icon = Icons.AutoMirrored.Filled.Logout,
+                    title = "Thoát",
+                    onClick = onLogout
+                )
+            }
+
+            Spacer(modifier = Modifier.height(100.dp)) // generous spacer for navigation bar
         }
+    }
+
+    // ── Dialogs ─────────────────────────────────────────────────────────────
+    
+    // Edit Profile Modal Dialog
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = {
+                Text(
+                    "Chỉnh sửa hồ sơ",
+                    fontWeight = FontWeight.Bold,
+                    color = DarkTextColor,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                    OutlinedTextField(
+                        value = tempName,
+                        onValueChange = { tempName = it },
+                        label = { Text("Tên hiển thị") },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = tempHandle,
+                        onValueChange = { tempHandle = it },
+                        label = { Text("Username (@...)") },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = tempEmail,
+                        onValueChange = { tempEmail = it },
+                        label = { Text("Email") },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = tempPhone,
+                        onValueChange = { tempPhone = it },
+                        label = { Text("Số điện thoại") },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = tempAddress,
+                        onValueChange = { tempAddress = it },
+                        label = { Text("Địa chỉ") },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onProfileUpdate(tempName, tempHandle, tempEmail, tempPhone, tempAddress, tempNotification)
+                        showEditDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+                ) {
+                    Text("Lưu", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text("Hủy", color = SecondaryTextColor)
+                }
+            },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = Color.White
+        )
+    }
+
+    // Delete Account Confirmation Dialog
+    if (showDeleteConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmDialog = false },
+            title = {
+                Text(
+                    "Xóa tài khoản",
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Red,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Text(
+                    "Bạn có chắc chắn muốn xóa tài khoản này không? Hành động này không thể hoàn tác và tất cả các thông tin đặt chỗ sẽ bị mất.",
+                    color = DarkTextColor,
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirmDialog = false
+                        onLogout() // log out after delete mockup
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("Xóa tài khoản", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmDialog = false }) {
+                    Text("Hủy", color = SecondaryTextColor)
+                }
+            },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = Color.White
+        )
     }
 }
 
+// Reusable card container matching standard iOS / Android card menus
 @Composable
-fun InfoRow(icon: ImageVector, label: String, value: String) {
-    Row(modifier = Modifier.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = SecondaryTextColor, modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(label, fontSize = 10.sp, color = SecondaryTextColor, fontWeight = FontWeight.Bold)
-            Text(value, style = MaterialTheme.typography.bodyMedium, color = DarkTextColor)
-        }
-    }
-}
-
-@Composable
-fun StatItem(value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = DarkTextColor)
-        Text(label, fontSize = 10.sp, color = SecondaryTextColor, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-fun HistoryItem(title: String, subtitle: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Surface(modifier = Modifier.size(50.dp), shape = CircleShape, color = Color.LightGray) {
-            // Placeholder for image
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.Bold)
-            Text(subtitle, color = SecondaryTextColor, fontSize = 12.sp)
-        }
-        Icon(Icons.Default.ChevronRight, null, tint = Color.LightGray)
-    }
-}
-
-@Composable
-fun SavedLocationItem(label: String, modifier: Modifier) {
-    Column(modifier = modifier) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().height(100.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = Color.LightGray
+fun ProfileCard(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Text(
+        text = title,
+        fontWeight = FontWeight.Bold,
+        fontSize = 14.sp,
+        color = Color(0xFF5A6E85),
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+    )
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 4.dp)
         ) {
-            // Placeholder for image
+            content()
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(label, fontWeight = FontWeight.Bold, fontSize = 12.sp)
     }
 }
 
+// Reusable profile item row with text and standard arrow indicator
 @Composable
-fun ProfileMenuOption(icon: ImageVector, title: String, subtitle: String) {
+fun ProfileRowItem(
+    icon: ImageVector,
+    title: String,
+    iconColor: Color = Color(0xFF2C3E50),
+    rightText: String? = null,
+    onClick: () -> Unit = {}
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = Color(0xFFF5F5F5)) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = SecondaryTextColor, modifier = Modifier.size(20.dp))
-            }
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconColor,
+            modifier = Modifier.size(22.dp)
+        )
         Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Text(subtitle, color = SecondaryTextColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = title,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+            color = Color(0xFF1E293B)
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        if (rightText != null) {
+            Text(
+                text = rightText,
+                color = Color(0xFF64748B),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
-        Icon(Icons.Default.ChevronRight, null, tint = Color.LightGray)
     }
 }

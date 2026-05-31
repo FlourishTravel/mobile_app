@@ -100,47 +100,6 @@ fun BookingReviewScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Select Date (UI Mockup)
-                Text("Select Date", fontWeight = FontWeight.Bold, color = DarkTextColor)
-                Spacer(modifier = Modifier.height(12.dp))
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(32.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                    Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Surface(shape = CircleShape, color = Color(0xFFF1F4F2), modifier = Modifier.size(36.dp)) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.ChevronLeft, null, modifier = Modifier.size(20.dp)) } }
-                            Text("September 2024", fontWeight = FontWeight.Bold)
-                            Surface(shape = CircleShape, color = Color(0xFFF1F4F2), modifier = Modifier.size(36.dp)) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(20.dp)) } }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            listOf("MO", "TU", "WE", "TH", "FR", "SA", "SU").forEach { Text(it, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SecondaryTextColor) }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            listOf("15", "16", "17", "18", "19", "20", "21").forEach { day ->
-                                val isSelected = day == "15"
-                                Surface(modifier = Modifier.size(36.dp), shape = CircleShape, color = if (isSelected) PrimaryGreen else Color.Transparent) {
-                                    Box(contentAlignment = Alignment.Center) { Text(day, color = if (isSelected) Color.White else DarkTextColor, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Ticket Selection
-                Text("Ticket Selection", fontWeight = FontWeight.Bold, color = DarkTextColor)
-                Spacer(modifier = Modifier.height(12.dp))
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        TicketCounter("Adults", "%,dđ per person".format(adultPrice), adultCount) { adultCount = it }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        TicketCounter("Children", "%,dđ per person".format(childPrice), childCount) { childCount = it }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
                 // Payment Method Section
                 Text("Payment Method", fontWeight = FontWeight.Bold, color = DarkTextColor)
                 Spacer(modifier = Modifier.height(12.dp))
@@ -201,17 +160,7 @@ fun PaymentMethodItem(title: String, subtitle: String, icon: androidx.compose.ui
     }
 }
 
-@Composable
-fun TicketCounter(label: String, priceLabel: String, count: Int, onCountChange: (Int) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Column { Text(label, fontWeight = FontWeight.Bold, color = DarkTextColor); Text(priceLabel, fontSize = 12.sp, color = SecondaryTextColor) }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.background(Color(0xFFF1F4F2), RoundedCornerShape(24.dp)).padding(4.dp)) {
-            Surface(modifier = Modifier.size(36.dp).clickable { if (count > 0) onCountChange(count - 1) }, shape = CircleShape, color = Color.White) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp)) } }
-            Text(count.toString(), modifier = Modifier.padding(horizontal = 16.dp), fontWeight = FontWeight.Bold)
-            Surface(modifier = Modifier.size(36.dp).clickable { onCountChange(count + 1) }, shape = CircleShape, color = PrimaryGreen) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, null, tint = Color.White, modifier = Modifier.size(16.dp)) } }
-        }
-    }
-}
+
 
 @Composable
 fun PaymentDetailRow(label: String, value: String, isFree: Boolean = false) {

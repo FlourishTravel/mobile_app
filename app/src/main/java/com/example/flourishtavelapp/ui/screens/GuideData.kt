@@ -92,13 +92,13 @@ val mockGuideAccounts = listOf(
 
 val mockGuideTours = listOf(
     GuideTour(
-        id = "T001",
-        name = "Khám Phá Thái Lan Chill",
-        destination = "Bangkok · Pattaya · Phi Phi",
-        startDate = "12/05/2025",
-        endDate = "16/05/2025",
+        id = "THA-2026-001",
+        name = "Bangkok - Pattaya 5N4Đ",
+        destination = "Grand Palace",
+        startDate = "01/06",
+        endDate = "05/06",
         durationDays = 5,
-        totalCustomers = 18,
+        totalCustomers = 28,
         status = TourStatus.ONGOING,
         imageDescription = "Thái Lan",
         meetingPoint = "Sân bay Tân Sơn Nhất, Cửa số 2, 06:00",
@@ -128,11 +128,34 @@ val mockGuideTours = listOf(
         )
     ),
     GuideTour(
-        id = "T002",
-        name = "Bali – Thiên Đường Nhiệt Đới",
-        destination = "Ubud · Seminyak · Nusa Penida",
-        startDate = "20/05/2025",
-        endDate = "25/05/2025",
+        id = "VN-2026-042",
+        name = "Đà Nẵng - Hội An 3N2Đ",
+        destination = "Đà Nẵng · Hội An",
+        startDate = "15/06",
+        endDate = "17/06",
+        durationDays = 3,
+        totalCustomers = 32,
+        status = TourStatus.UPCOMING,
+        imageDescription = "Đà Nẵng",
+        meetingPoint = "Ga Đà Nẵng, Cửa số 1, 08:00",
+        itinerary = listOf(
+            GuideTourDay(1, "Đón Đoàn – Ngũ Hành Sơn – Hội An", "Đón khách tại ga/sân bay. Tham quan Ngũ Hành Sơn. Chiều tối đi Hội An."),
+            GuideTourDay(2, "Bà Nà Hills – Cầu Vàng", "Vui chơi tại Bà Nà Hills, check-in Cầu Vàng nổi tiếng."),
+            GuideTourDay(3, "Bán đảo Sơn Trà – Tiễn Đoàn", "Thăm Chùa Linh Ứng Bán đảo Sơn Trà, mua sắm đặc sản Chợ Hàn. Tiễn khách.")
+        ),
+        customers = listOf(
+            TourCustomer("C101", "Nguyễn Thị Thanh", "0901 111 222", "011122334455", "Nữ", 2, 0, PaymentStatus.PAID),
+            TourCustomer("C102", "Trần Văn Hùng", "0912 222 333", "033344556677", "Nam", 1, 0, PaymentStatus.PAID),
+            TourCustomer("C103", "Lý Mỹ Châu", "0933 333 444", "055566778899", "Nữ", 2, 2, PaymentStatus.DEPOSIT),
+            TourCustomer("C104", "Phan Quốc Khánh", "0944 444 555", "077788990011", "Nam", 2, 1, PaymentStatus.PENDING)
+        )
+    ),
+    GuideTour(
+        id = "IDN-2026-015",
+        name = "Bali - Thiên đường nghỉ dưỡng",
+        destination = "Bali",
+        startDate = "20/06",
+        endDate = "25/06",
         durationDays = 6,
         totalCustomers = 12,
         status = TourStatus.UPCOMING,
@@ -151,27 +174,6 @@ val mockGuideTours = listOf(
             TourCustomer("C102", "Trần Văn Hùng", "0912 222 333", "033344556677", "Nam", 1, 0, PaymentStatus.PAID),
             TourCustomer("C103", "Lý Mỹ Châu", "0933 333 444", "055566778899", "Nữ", 2, 2, PaymentStatus.DEPOSIT),
             TourCustomer("C104", "Phan Quốc Khánh", "0944 444 555", "077788990011", "Nam", 2, 1, PaymentStatus.PENDING)
-        )
-    ),
-    GuideTour(
-        id = "T003",
-        name = "Hạ Long – Vịnh Di Sản",
-        destination = "Hạ Long · Cát Bà · Lan Hạ",
-        startDate = "01/04/2025",
-        endDate = "03/04/2025",
-        durationDays = 3,
-        totalCustomers = 22,
-        status = TourStatus.COMPLETED,
-        imageDescription = "Hạ Long",
-        meetingPoint = "Khách sạn Novotel Hạ Long, 08:00",
-        itinerary = listOf(
-            GuideTourDay(1, "Hà Nội – Hạ Long – Du Thuyền", "Xe đưa từ Hà Nội xuống cảng, lên du thuyền, khám phá hang Sửng Sốt.", isCompleted = true),
-            GuideTourDay(2, "Chèo Kayak – Cát Bà", "Chèo kayak qua các hang động nước, thăm đảo Cát Bà.", isCompleted = true),
-            GuideTourDay(3, "Vịnh Lan Hạ – Về Hà Nội", "Bơi tại Vịnh Lan Hạ, ăn trưa trên thuyền, xe đưa về Hà Nội.", isCompleted = true)
-        ),
-        customers = listOf(
-            TourCustomer("C201", "Trịnh Thị Bích", "0901 999 888", "099988776655", "Nữ", 2, 0, PaymentStatus.PAID),
-            TourCustomer("C202", "Ngô Văn Đức", "0912 888 777", "088877665544", "Nam", 1, 1, PaymentStatus.PAID)
         )
     )
 )
