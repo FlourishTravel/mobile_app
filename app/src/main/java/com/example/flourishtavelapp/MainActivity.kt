@@ -156,7 +156,7 @@ fun AppNavigation() {
             // ── Guide Screens ──────────────────────────────────────────────
             NavigationState.GuideHome -> GuideHomeScreen(
                 guide = currentGuide,
-                modifier = Modifier.padding(innerPadding),
+                modifier = Modifier,
                 onTourClick = { tour ->
                     selectedGuideTour = tour
                     navState = NavigationState.GuideTourDetail
