@@ -104,9 +104,15 @@ fun GuideHomeScreen(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Title: Tour Của Tôi in bold primary green color
+                // Title: Dynamic header title based on active tab
                 Text(
-                    text = "Tour Của Tôi",
+                    text = when (selectedTab) {
+                        0 -> "Tour Của Tôi"
+                        1 -> "Lịch Công Tác"
+                        2 -> "Tin Nhắn"
+                        3 -> "Hồ Sơ"
+                        else -> "Tour Của Tôi"
+                    },
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 20.sp,
                     color = Color(0xFF00796B), // Green theme
@@ -142,7 +148,7 @@ fun GuideHomeScreen(
                         guide = guide,
                         onTourClick = onTourClick
                     )
-                    1 -> GuideMapsMockupScreen()
+                    1 -> GuideBookingCalendarContent()
                     2 -> GuideChatMockupScreen()
                     3 -> GuideProfileContent(
                         guide = guide,
@@ -301,7 +307,7 @@ private fun GuideBottomNavigation(selectedTab: Int, onTabSelected: (Int) -> Unit
         data class NavigationItem(val label: String, val icon: ImageVector, val selectedIcon: ImageVector)
         val items = listOf(
             NavigationItem("Check-in", Icons.Outlined.QrCodeScanner, Icons.Filled.QrCodeScanner),
-            NavigationItem("Maps", Icons.Outlined.Map, Icons.Filled.Map),
+            NavigationItem("Lịch", Icons.Outlined.CalendarMonth, Icons.Filled.CalendarMonth),
             NavigationItem("Chat", Icons.Outlined.Chat, Icons.Filled.Chat),
             NavigationItem("Hồ sơ", Icons.Outlined.Person, Icons.Filled.Person)
         )
@@ -793,119 +799,7 @@ fun UpcomingTourCard(
     }
 }
 
-// ─── Tab 1: Maps Screen Mockup ────────────────────────────────────────────────
-
-@Composable
-fun GuideMapsMockupScreen() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFE8F5E9)),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(24.dp)
-        ) {
-            Surface(
-                modifier = Modifier.size(72.dp),
-                shape = CircleShape,
-                color = Color.White
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Map,
-                    contentDescription = null,
-                    tint = Color(0xFF00796B),
-                    modifier = Modifier.padding(18.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Bản đồ lịch trình đoàn",
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Color(0xFF1E293B)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "Bangkok - Pattaya (THA-2026-001)\nLộ trình hôm nay: Khách sạn -> Grand Palace -> Safari World",
-                fontSize = 13.sp,
-                color = Color(0xFF64748B),
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Mock layout drawing map nodes
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFCBD5E1))
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        // Drawing path lines
-                        drawLine(
-                            color = Color(0xFF00796B),
-                            start = androidx.compose.ui.geometry.Offset(100f, 250f),
-                            end = androidx.compose.ui.geometry.Offset(350f, 150f),
-                            strokeWidth = 6f
-                        )
-                        drawLine(
-                            color = Color(0xFF00796B),
-                            start = androidx.compose.ui.geometry.Offset(350f, 150f),
-                            end = androidx.compose.ui.geometry.Offset(600f, 300f),
-                            strokeWidth = 6f
-                        )
-                    }
-
-                    // Pinned markers
-                    MapPin(
-                        modifier = Modifier.align(Alignment.CenterStart).offset(x = 16.dp, y = 30.dp),
-                        label = "Khách sạn"
-                    )
-                    MapPin(
-                        modifier = Modifier.align(Alignment.TopCenter).offset(y = 20.dp),
-                        label = "Wat Arun (Grand Palace)"
-                    )
-                    MapPin(
-                        modifier = Modifier.align(Alignment.CenterEnd).offset(x = (-16).dp, y = 50.dp),
-                        label = "Safari World"
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun MapPin(modifier: Modifier = Modifier, label: String) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Default.LocationOn,
-            contentDescription = null,
-            tint = Color(0xFFC62828),
-            modifier = Modifier.size(28.dp)
-        )
-        Text(
-            text = label,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF1E293B),
-            modifier = Modifier
-                .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(4.dp))
-                .padding(horizontal = 4.dp, vertical = 2.dp)
-        )
-    }
-}
+// Tab 1 (Maps Screen Mockup) code was removed and replaced by Direct Calendar Booking Content in the main navigation flow.
 
 // ─── Tab 2: Group & Operator Chat Mockup Screen ───────────────────────────────
 
@@ -1100,6 +994,12 @@ fun GuideBookingCalendarContent() {
     var bookedDays by remember { mutableStateOf(setOf<LocalDate>()) }
     var showSuccessSnackbar by remember { mutableStateOf(false) }
 
+    // Dropdown Selectors State
+    var selectedDestination by remember { mutableStateOf("Bangkok, Thái Lan") }
+    var destinationMenuExpanded by remember { mutableStateOf(false) }
+    var selectedTourType by remember { mutableStateOf("Tour Cao Cấp") }
+    var tourTypeMenuExpanded by remember { mutableStateOf(false) }
+
     val assignedDays = remember {
         mapOf(
             LocalDate.now().plusDays(2) to "Bangkok - Pattaya 5N4Đ",
@@ -1116,82 +1016,253 @@ fun GuideBookingCalendarContent() {
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+        // --- 1. Destination & Tour Type Selectors Row ---
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
-                Icon(Icons.Default.ChevronLeft, "Prev", tint = Color(0xFF00796B))
+            // Box 1: ĐIỂM ĐẾN
+            Box(modifier = Modifier.weight(1f)) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(72.dp)
+                        .clickable { destinationMenuExpanded = true },
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFEBEBEB))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "ĐIỂM ĐẾN",
+                            color = SecondaryTextColor,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = Color(0xFF00796B),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = selectedDestination,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = DarkTextColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = null,
+                                tint = SecondaryTextColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+                DropdownMenu(
+                    expanded = destinationMenuExpanded,
+                    onDismissRequest = { destinationMenuExpanded = false },
+                    modifier = Modifier.background(Color.White)
+                ) {
+                    listOf("Bangkok, Thái Lan", "Chiang Mai, Thái Lan", "Phuket, Thái Lan", "Hồ Chí Minh, Việt Nam").forEach { dest ->
+                        DropdownMenuItem(
+                            text = { Text(dest, fontWeight = FontWeight.Bold, color = DarkTextColor) },
+                            onClick = {
+                                selectedDestination = dest
+                                destinationMenuExpanded = false
+                            }
+                        )
+                    }
+                }
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Tháng ${currentMonth.monthValue}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = DarkTextColor)
-                Text("${currentMonth.year}", fontSize = 12.sp, color = SecondaryTextColor)
-            }
-            IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
-                Icon(Icons.Default.ChevronRight, "Next", tint = Color(0xFF00796B))
-            }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Grid weekdays
-        Row(modifier = Modifier.fillMaxWidth()) {
-            listOf("CN", "T2", "T3", "T4", "T5", "T6", "T7").forEach { label ->
-                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SecondaryTextColor)
+            // Box 2: LOẠI TOUR
+            Box(modifier = Modifier.weight(1f)) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(72.dp)
+                        .clickable { tourTypeMenuExpanded = true },
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFEBEBEB))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "LOẠI TOUR",
+                            color = SecondaryTextColor,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Explore,
+                                    contentDescription = null,
+                                    tint = Color(0xFF00796B),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = selectedTourType,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = DarkTextColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = null,
+                                tint = SecondaryTextColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+                DropdownMenu(
+                    expanded = tourTypeMenuExpanded,
+                    onDismissRequest = { tourTypeMenuExpanded = false },
+                    modifier = Modifier.background(Color.White)
+                ) {
+                    listOf("Tour Cao Cấp", "Tour Tiêu Chuẩn", "Tour Sinh Thái", "Tour Giá Rẻ").forEach { type ->
+                        DropdownMenuItem(
+                            text = { Text(type, fontWeight = FontWeight.Bold, color = DarkTextColor) },
+                            onClick = {
+                                selectedTourType = type
+                                tourTypeMenuExpanded = false
+                            }
+                        )
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        val totalCells = firstDayOfWeek + daysInMonth
-        val rows = (totalCells + 6) / 7
+        // --- 2. Calendar wrapped in a rounded white Card block ---
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = BorderStroke(1.dp, Color(0xFFEBEBEB)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Month Selector Title Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
+                        Icon(Icons.Default.ChevronLeft, "Prev", tint = Color(0xFF00796B))
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Tháng ${currentMonth.monthValue}, ${currentMonth.year}",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = DarkTextColor
+                        )
+                    }
+                    IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
+                        Icon(Icons.Default.ChevronRight, "Next", tint = Color(0xFF00796B))
+                    }
+                }
 
-        for (row in 0 until rows) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                for (col in 0..6) {
-                    val cellIndex = row * 7 + col
-                    val day = cellIndex - firstDayOfWeek + 1
+                Spacer(modifier = Modifier.height(20.dp))
 
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .aspectRatio(1f)
-                            .padding(2.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (day in 1..daysInMonth) {
-                            val date = currentMonth.atDay(day)
-                            val isPast = date.isBefore(today)
-                            val isSelected = date in selectedDays
-                            val isBooked = date in bookedDays
-                            val isAssigned = date in assignedDays
+                // Grid weekdays labels
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    listOf("CN", "T2", "T3", "T4", "T5", "T6", "T7").forEach { label ->
+                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SecondaryTextColor)
+                        }
+                    }
+                }
 
-                            val bgColor = when {
-                                isAssigned -> Color(0xFF00796B)
-                                isBooked -> Color(0xFF1565C0)
-                                isSelected -> Color(0xFF81C784)
-                                else -> Color.Transparent
-                            }
-                            val textColor = when {
-                                isAssigned || isBooked || isSelected -> Color.White
-                                isPast -> SecondaryTextColor.copy(alpha = 0.4f)
-                                else -> DarkTextColor
-                            }
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Day numbers cells
+                val totalCells = firstDayOfWeek + daysInMonth
+                val rows = (totalCells + 6) / 7
+
+                for (row in 0 until rows) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        for (col in 0..6) {
+                            val cellIndex = row * 7 + col
+                            val day = cellIndex - firstDayOfWeek + 1
 
                             Box(
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(bgColor)
-                                    .clickable(enabled = !isPast && !isAssigned && !isBooked) {
-                                        selectedDays = if (date in selectedDays) selectedDays - date else selectedDays + date
-                                    },
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                                    .padding(2.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("$day", color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                if (day in 1..daysInMonth) {
+                                    val date = currentMonth.atDay(day)
+                                    val isPast = date.isBefore(today)
+                                    val isSelected = date in selectedDays
+                                    val isBooked = date in bookedDays
+                                    val isAssigned = date in assignedDays
+
+                                    val bgColor = when {
+                                        isAssigned -> Color(0xFF00796B)
+                                        isBooked -> Color(0xFF1565C0)
+                                        isSelected -> Color(0xFF81C784)
+                                        else -> Color.Transparent
+                                    }
+                                    val textColor = when {
+                                        isAssigned || isBooked || isSelected -> Color.White
+                                        isPast -> SecondaryTextColor.copy(alpha = 0.4f)
+                                        else -> DarkTextColor
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(bgColor)
+                                            .clickable(enabled = !isPast && !isAssigned && !isBooked) {
+                                                selectedDays = if (date in selectedDays) selectedDays - date else selectedDays + date
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text("$day", color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
                             }
                         }
                     }
@@ -1201,6 +1272,7 @@ fun GuideBookingCalendarContent() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // --- 3. Booking Confirmation Button ---
         Button(
             onClick = {
                 bookedDays = bookedDays + selectedDays
@@ -1209,12 +1281,24 @@ fun GuideBookingCalendarContent() {
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .height(52.dp),
             enabled = selectedDays.isNotEmpty(),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00796B))
+            shape = RoundedCornerShape(26.dp), // Rounded pill button matching image
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFE2E2E2), // Light gray disabled background
+                contentColor = Color(0xFF7F7F7F),
+                disabledContainerColor = Color(0xFFE2E2E2),
+                disabledContentColor = Color(0xFF7F7F7F)
+            )
         ) {
-            Text("Xác nhận đăng ký lịch", fontWeight = FontWeight.Bold)
+            // Apply green active colors if selectedDays has items
+            val activeColor = if (selectedDays.isNotEmpty()) Color(0xFF00796B) else Color(0xFF7F7F7F)
+            Text(
+                text = "Xác nhận đăng ký lịch",
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = if (selectedDays.isNotEmpty()) Color.White else activeColor
+            )
         }
 
         if (showSuccessSnackbar) {
