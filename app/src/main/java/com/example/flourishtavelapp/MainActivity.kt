@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.example.flourishtavelapp.ui.components.FlourishBottomNavigation
 import com.example.flourishtavelapp.ui.screens.*
 import com.example.flourishtavelapp.ui.theme.FlourishTavelAppTheme
+import com.example.flourishtavelapp.data.session.SessionManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,6 +40,10 @@ fun AppNavigation() {
     var isGuideLoggedIn by remember { mutableStateOf(false) }
     var selectedCategoryForActivities by remember { mutableStateOf("") }
 
+    // SharedPreferences Session Manager
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+
     // Guide State
     val currentGuide = com.example.flourishtavelapp.ui.screens.mockGuideAccounts.first()
     var selectedGuideTour by remember { mutableStateOf<com.example.flourishtavelapp.ui.screens.GuideTour?>(null) }
@@ -60,6 +66,26 @@ fun AppNavigation() {
     var bookingGender by remember { mutableStateOf("Nam") }
     var bookingNote by remember { mutableStateOf("") }
 
+    // Auto-Login: Check if token exists on app launch
+    LaunchedEffect(Unit) {
+        if (sessionManager.isLoggedIn()) {
+            val user = sessionManager.getUserInfo()
+            if (user != null) {
+                userName = user.fullName
+                userEmail = user.email
+                userHandle = "@${user.email.substringBefore("@")}"
+                if (user.role.equals("GUIDE", ignoreCase = true)) {
+                    isGuideLoggedIn = true
+                    navState = NavigationState.GuideHome
+                } else {
+                    isLoggedIn = true
+                    navState = NavigationState.MainApp
+                    selectedTab = 0
+                }
+            }
+        }
+    }
+
     val onBackToHome = { 
         navState = NavigationState.MainApp
         selectedTab = 0 
@@ -79,12 +105,19 @@ fun AppNavigation() {
     ) { innerPadding ->
         when (navState) {
             NavigationState.Login -> LoginScreen(
-                onLoginSuccess = {
+                onLoginSuccess = { user ->
                     isLoggedIn = true
+                    userName = user.fullName
+                    userEmail = user.email
+                    userHandle = "@${user.email.substringBefore("@")}"
                     navState = NavigationState.MainApp
+                    selectedTab = 0
                 },
-                onGuideLoginSuccess = {
+                onGuideLoginSuccess = { user ->
                     isGuideLoggedIn = true
+                    userName = user.fullName
+                    userEmail = user.email
+                    userHandle = "@${user.email.substringBefore("@")}"
                     navState = NavigationState.GuideHome
                 },
                 onRegisterClick = { navState = NavigationState.Register },
@@ -94,9 +127,13 @@ fun AppNavigation() {
                 }
             )
             NavigationState.Register -> RegisterScreen(
-                onRegisterSuccess = {
+                onRegisterSuccess = { user ->
                     isLoggedIn = true
+                    userName = user.fullName
+                    userEmail = user.email
+                    userHandle = "@${user.email.substringBefore("@")}"
                     navState = NavigationState.MainApp
+                    selectedTab = 0
                 },
                 onLoginClick = { navState = NavigationState.Login },
                 onBack = { navState = NavigationState.Login }
@@ -162,6 +199,7 @@ fun AppNavigation() {
                     navState = NavigationState.GuideTourDetail
                 },
                 onLogout = {
+                    sessionManager.clearSession()
                     isGuideLoggedIn = false
                     navState = NavigationState.MainApp
                     selectedTab = 0
@@ -264,6 +302,7 @@ fun AppNavigation() {
                                 modifier = Modifier.padding(innerPadding),
                                 onBack = onBackToHome,
                                 onLogout = {
+                                    sessionManager.clearSession()
                                     isLoggedIn = false
                                     selectedTab = 0
                                 }
