@@ -13,21 +13,34 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtavelapp.data.api.RetrofitClient
+import com.example.flourishtavelapp.data.model.LoginRequest
+import com.example.flourishtavelapp.data.session.SessionManager
+import com.example.flourishtavelapp.data.model.UserInfo
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onGuideLoginSuccess: () -> Unit = {},
+    onLoginSuccess: (UserInfo) -> Unit,
+    onGuideLoginSuccess: (UserInfo) -> Unit = {},
     onRegisterClick: () -> Unit,
     onBack: () -> Unit = {}
 ) {
     var emailInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val coroutineScope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
@@ -125,6 +138,36 @@ fun LoginScreen(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Display error message if not null
+                    if (errorMessage != null) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFFEE2E2), // Light red background
+                            border = BorderStroke(1.dp, Color(0xFFFCA5A5))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Error,
+                                    contentDescription = "Error",
+                                    tint = Color(0xFFDC2626),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = errorMessage!!,
+                                    color = Color(0xFF991B1B),
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    }
+
                     // Email input field
                     LoginInputField(
                         value = emailInput,
@@ -164,36 +207,76 @@ fun LoginScreen(
                     // ── Button 1: Đăng nhập (Passenger) ───────────────────
                     Button(
                         onClick = {
-                            val targetUsername = if (emailInput.contains("guide") || emailInput == "guide123") "guide123" else "bao123"
-                            if (targetUsername == "guide123") {
-                                onGuideLoginSuccess()
-                            } else {
-                                onLoginSuccess()
+                            if (emailInput.isBlank() || passwordInput.isBlank()) {
+                                errorMessage = "Vui lòng nhập đầy đủ thông tin!"
+                                return@Button
+                            }
+                            isLoading = true
+                            errorMessage = null
+                            coroutineScope.launch {
+                                try {
+                                    val response = RetrofitClient.authApiService.login(
+                                        LoginRequest(emailInput.trim(), passwordInput)
+                                    )
+                                    isLoading = false
+                                    if (response.isSuccessful && response.body()?.success == true) {
+                                        val apiResponse = response.body()!!
+                                        val authData = apiResponse.data
+                                        if (authData != null) {
+                                            sessionManager.saveSession(
+                                                authData.accessToken,
+                                                authData.refreshToken,
+                                                authData.user
+                                            )
+                                            if (authData.user.role.equals("GUIDE", ignoreCase = true)) {
+                                                onGuideLoginSuccess(authData.user)
+                                            } else {
+                                                onLoginSuccess(authData.user)
+                                            }
+                                        } else {
+                                            errorMessage = "Không nhận được thông tin xác thực từ server!"
+                                        }
+                                    } else {
+                                        errorMessage = response.body()?.message ?: "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!"
+                                    }
+                                } catch (e: Exception) {
+                                    isLoading = false
+                                    errorMessage = "Lỗi kết nối đến máy chủ: ${e.localizedMessage}"
+                                }
                             }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(54.dp),
                         shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF005b41))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF005b41)),
+                        enabled = !isLoading
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Phone, // Phone/Receiver icon matching image
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Đăng nhập",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = Color.White
-                            )
+                        } else {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.LockOpen,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Đăng nhập",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
 
@@ -201,41 +284,88 @@ fun LoginScreen(
 
                     // ── Button 2: Đăng nhập với tư cách Hướng dẫn viên ──────
                     OutlinedButton(
-                        onClick = onGuideLoginSuccess,
+                        onClick = {
+                            if (emailInput.isBlank() || passwordInput.isBlank()) {
+                                errorMessage = "Vui lòng nhập thông tin Hướng dẫn viên!"
+                                return@OutlinedButton
+                            }
+                            isLoading = true
+                            errorMessage = null
+                            coroutineScope.launch {
+                                try {
+                                    val response = RetrofitClient.authApiService.login(
+                                        LoginRequest(emailInput.trim(), passwordInput)
+                                    )
+                                    isLoading = false
+                                    if (response.isSuccessful && response.body()?.success == true) {
+                                        val apiResponse = response.body()!!
+                                        val authData = apiResponse.data
+                                        if (authData != null) {
+                                            if (authData.user.role.equals("GUIDE", ignoreCase = true)) {
+                                                sessionManager.saveSession(
+                                                    authData.accessToken,
+                                                    authData.refreshToken,
+                                                    authData.user
+                                                )
+                                                onGuideLoginSuccess(authData.user)
+                                            } else {
+                                                errorMessage = "Tài khoản của bạn không có quyền Hướng dẫn viên!"
+                                            }
+                                        } else {
+                                            errorMessage = "Không nhận được thông tin xác thực từ server!"
+                                        }
+                                    } else {
+                                        errorMessage = response.body()?.message ?: "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!"
+                                    }
+                                } catch (e: Exception) {
+                                    isLoading = false
+                                    errorMessage = "Lỗi kết nối đến máy chủ: ${e.localizedMessage}"
+                                }
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(64.dp),
                         shape = RoundedCornerShape(16.dp),
                         border = BorderStroke(1.2.dp, Color(0xFF005b41)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF005b41))
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF005b41)),
+                        enabled = !isLoading
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Person,
-                                contentDescription = null,
-                                tint = Color(0xFF005b41),
-                                modifier = Modifier.size(24.dp)
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color(0xFF005b41),
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally
+                        } else {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
                             ) {
-                                Text(
-                                    text = "Đăng nhập với tư cách",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF64748B),
-                                    fontWeight = FontWeight.Medium
+                                Icon(
+                                    imageVector = Icons.Outlined.Person,
+                                    contentDescription = null,
+                                    tint = Color(0xFF005b41),
+                                    modifier = Modifier.size(24.dp)
                                 )
-                                Text(
-                                    text = "Hướng dẫn viên",
-                                    fontSize = 15.sp,
-                                    color = Color(0xFF005b41),
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "Đăng nhập với tư cách",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF64748B),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        text = "Hướng dẫn viên",
+                                        fontSize = 15.sp,
+                                        color = Color(0xFF005b41),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }

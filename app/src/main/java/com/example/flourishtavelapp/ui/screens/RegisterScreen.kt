@@ -1,5 +1,6 @@
 package com.example.flourishtavelapp.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -30,10 +32,15 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtavelapp.data.api.RetrofitClient
+import com.example.flourishtavelapp.data.model.RegisterRequest
+import com.example.flourishtavelapp.data.session.SessionManager
+import com.example.flourishtavelapp.data.model.UserInfo
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: () -> Unit,
+    onRegisterSuccess: (UserInfo) -> Unit,
     onLoginClick: () -> Unit,
     onBack: () -> Unit = {}
 ) {
@@ -43,6 +50,13 @@ fun RegisterScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var agreeToTerms by remember { mutableStateOf(false) }
+
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -118,6 +132,36 @@ fun RegisterScreen(
             color = Color.White
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
+                // Display error message if not null
+                if (errorMessage != null) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFFEE2E2), // Light red background
+                        border = BorderStroke(1.dp, Color(0xFFFCA5A5))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Error,
+                                contentDescription = "Error",
+                                tint = Color(0xFFDC2626),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = errorMessage!!,
+                                color = Color(0xFF991B1B),
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                }
+
                 RegisterField(
                     label = "HỌ TÊN",
                     value = name,
@@ -192,14 +236,73 @@ fun RegisterScreen(
 
                 // Register Button
                 Button(
-                    onClick = onRegisterSuccess,
+                    onClick = {
+                        if (name.isBlank() || email.isBlank() || password.isBlank()) {
+                            errorMessage = "Vui lòng nhập đầy đủ thông tin!"
+                            return@Button
+                        }
+                        if (password != confirmPassword) {
+                            errorMessage = "Mật khẩu nhập lại không khớp!"
+                            return@Button
+                        }
+                        if (password.length < 6) {
+                            errorMessage = "Mật khẩu phải chứa ít nhất 6 ký tự!"
+                            return@Button
+                        }
+                        if (!agreeToTerms) {
+                            errorMessage = "Bạn cần đồng ý với điều khoản sử dụng!"
+                            return@Button
+                        }
+                        isLoading = true
+                        errorMessage = null
+                        coroutineScope.launch {
+                            try {
+                                val response = RetrofitClient.authApiService.register(
+                                    RegisterRequest(
+                                        fullName = name.trim(),
+                                        email = email.trim(),
+                                        password = password
+                                    )
+                                )
+                                isLoading = false
+                                if (response.isSuccessful && response.body()?.success == true) {
+                                    val apiResponse = response.body()!!
+                                    val authData = apiResponse.data
+                                    if (authData != null) {
+                                        sessionManager.saveSession(
+                                            authData.accessToken,
+                                            authData.refreshToken,
+                                            authData.user
+                                        )
+                                        onRegisterSuccess(authData.user)
+                                    } else {
+                                        errorMessage = "Đăng ký thành công nhưng không nhận được dữ liệu từ server!"
+                                    }
+                                } else {
+                                    errorMessage = response.body()?.message ?: "Đăng ký thất bại. Email có thể đã tồn tại!"
+                                }
+                            } catch (e: Exception) {
+                                isLoading = false
+                                errorMessage = "Lỗi kết nối đến máy chủ: ${e.localizedMessage}"
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(64.dp),
                     shape = RoundedCornerShape(32.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                    enabled = !isLoading
                 ) {
-                    Text("Đăng ký ngay", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Đăng ký ngay", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
