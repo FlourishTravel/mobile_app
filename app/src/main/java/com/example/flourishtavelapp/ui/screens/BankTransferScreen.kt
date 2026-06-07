@@ -1,5 +1,7 @@
 package com.example.flourishtavelapp.ui.screens
 
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -13,25 +15,52 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtavelapp.data.api.RetrofitClient
+import com.example.flourishtavelapp.data.model.CreateBookingRequest
+import com.example.flourishtavelapp.data.model.GuestItem
+import kotlinx.coroutines.launch
 
 @Composable
 fun BankTransferScreen(
     adultCount: Int,
     childCount: Int,
     onBack: () -> Unit,
-    onComplete: () -> Unit,
+    onComplete: (String, String) -> Unit, // returns bookingId, orderId
+    sessionId: String,
+    promoCode: String?,
+    promoDiscount: Long,
+    bookingName: String,
+    bookingEmail: String,
+    bookingPhone: String,
+    bookingIdCard: String,
+    bookingGender: String,
+    bookingNote: String,
     modifier: Modifier = Modifier
 ) {
+    // Hardware back press behavior
+    BackHandler {
+        onBack()
+    }
+
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    val coroutineScope = rememberCoroutineScope()
+
     val adultPrice = 1000000
     val childPrice = 450000
     val totalAmount = (adultCount.toLong() * adultPrice) + (childCount.toLong() * childPrice)
+    val finalTotal = if (totalAmount - promoDiscount > 0) totalAmount - promoDiscount else 0L
+
+    var isProcessing by remember { mutableStateOf(false) }
+    var apiError by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = modifier.fillMaxSize().background(NatureGreenBackground)) {
         Column(
@@ -60,7 +89,7 @@ fun BankTransferScreen(
                 Text("Bước 2/2", color = SecondaryTextColor, fontSize = 12.sp)
             }
 
-            // Step Indicator - Synchronized with Step 1 design
+            // Step Indicator
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -83,12 +112,30 @@ fun BankTransferScreen(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("TỔNG SỐ TIỀN", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SecondaryTextColor)
-                    Text("%,dđ".format(totalAmount), fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = DarkTextColor)
+                    // API error banner
+                    if (apiError != null) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFFEE2E2),
+                            border = BorderStroke(1.dp, Color(0xFFFCA5A5))
+                        ) {
+                            Text(
+                                text = apiError!!,
+                                color = Color(0xFF991B1B),
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(12.dp),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    Text("TỔNG SỐ TIỀN THỰC TẾ", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SecondaryTextColor)
+                    Text("%,dđ".format(finalTotal), fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = DarkTextColor)
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
-                    // QR Code
+                    // QR Code Graphic
                     Box(
                         modifier = Modifier
                             .size(200.dp)
@@ -112,7 +159,27 @@ fun BankTransferScreen(
                     // Bank Account Details
                     BankDetailRow(label = "NGÂN HÀNG", value = "Vietcombank", icon = Icons.Default.AccountBalance)
                     Spacer(modifier = Modifier.height(16.dp))
-                    BankDetailRow(label = "SỐ TÀI KHOẢN", value = "1234567890", icon = Icons.Default.ContentCopy)
+                    
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("SỐ TÀI KHOẢN", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SecondaryTextColor)
+                            Text("1234567890", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = DarkTextColor)
+                        }
+                        Surface(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString("1234567890"))
+                                Toast.makeText(context, "Đã sao chép số tài khoản!", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.size(40.dp),
+                            shape = CircleShape,
+                            color = Color(0xFFF1F4F2)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.ContentCopy, null, tint = DarkTextColor, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(16.dp))
                     BankDetailRow(label = "CHỦ TÀI KHOẢN", value = "FLOURISH TRAVEL", icon = Icons.Default.Person)
 
@@ -124,16 +191,20 @@ fun BankTransferScreen(
                         shape = RoundedCornerShape(24.dp),
                         color = LightGreenBackground.copy(alpha = 0.7f)
                     ) {
+                        val transferMemo = "FT-${bookingPhone.takeLast(4)}"
                         Row(
                             modifier = Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("NỘI DUNG CHUYỂN KHOẢN", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SecondaryTextColor)
-                                Text("FLM-BOOKING-ID", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = PrimaryGreen)
+                                Text(transferMemo, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = PrimaryGreen)
                             }
                             Button(
-                                onClick = { /* Copy */ },
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString(transferMemo))
+                                    Toast.makeText(context, "Đã sao chép nội dung chuyển khoản!", Toast.LENGTH_SHORT).show()
+                                },
                                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
                                 shape = RoundedCornerShape(12.dp),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
@@ -173,7 +244,7 @@ fun BankTransferScreen(
             Spacer(modifier = Modifier.height(120.dp))
         }
 
-        // Final Button
+        // Final Booking Action Button
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -181,21 +252,77 @@ fun BankTransferScreen(
                 .padding(20.dp)
         ) {
             Button(
-                onClick = onComplete,
+                onClick = {
+                    coroutineScope.launch {
+                        isProcessing = true
+                        apiError = null
+                        
+                        // Construct lists of guests
+                        val guestNamesList = mutableListOf<String>()
+                        val guestsList = mutableListOf<GuestItem>()
+                        
+                        guestNamesList.add(bookingName)
+                        guestsList.add(GuestItem(fullName = bookingName, idNumber = bookingIdCard, dateOfBirth = "1995-01-01"))
+                        
+                        val totalGuestsCount = adultCount + childCount
+                        for (i in 2..totalGuestsCount) {
+                            val name = "Khách đi cùng $i"
+                            guestNamesList.add(name)
+                            guestsList.add(GuestItem(fullName = name, idNumber = "000000000000", dateOfBirth = "2000-01-01"))
+                        }
+
+                        val request = CreateBookingRequest(
+                            sessionId = sessionId,
+                            guestCount = totalGuestsCount,
+                            specialRequests = bookingNote.ifBlank { null },
+                            promotionCode = promoCode,
+                            contactPhone = bookingPhone,
+                            pickupAddress = "TP. Hồ Chí Minh, Việt Nam",
+                            guestNames = guestNamesList,
+                            guests = guestsList,
+                            emergencyContactName = bookingName,
+                            emergencyContactPhone = bookingPhone,
+                            paymentMethod = "Bank Transfer"
+                        )
+
+                        try {
+                            val response = RetrofitClient.bookingApiService.createBooking(request)
+                            if (response.isSuccessful && response.body()?.success == true) {
+                                val bookingData = response.body()?.data
+                                if (bookingData != null) {
+                                    onComplete(bookingData.bookingId, bookingData.orderId)
+                                } else {
+                                    apiError = "Lỗi phản hồi: Dữ liệu đặt tour trống!"
+                                }
+                            } else {
+                                apiError = "Đặt vé thất bại: " + (response.body()?.message ?: "Lỗi máy chủ")
+                            }
+                        } catch (e: Exception) {
+                            apiError = "Lỗi kết nối: ${e.localizedMessage}"
+                        } finally {
+                            isProcessing = false
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp),
                 shape = RoundedCornerShape(24.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                enabled = !isProcessing
             ) {
-                Text("Tôi đã chuyển khoản", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                if (isProcessing) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Tôi đã chuyển khoản", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
             }
         }
     }
 }
 
 @Composable
-fun StepItem(number: String, label: String, isActive: Boolean = false, isCompleted: Boolean = false) {
+private fun StepItem(number: String, label: String, isActive: Boolean = false, isCompleted: Boolean = false) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Surface(
             modifier = Modifier.size(28.dp),
@@ -216,7 +343,7 @@ fun StepItem(number: String, label: String, isActive: Boolean = false, isComplet
 }
 
 @Composable
-fun BankDetailRow(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+private fun BankDetailRow(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
             Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SecondaryTextColor)
@@ -233,3 +360,4 @@ fun BankDetailRow(label: String, value: String, icon: androidx.compose.ui.graphi
         }
     }
 }
+

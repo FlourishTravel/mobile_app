@@ -1,10 +1,12 @@
 package com.example.flourishtavelapp.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,7 +16,7 @@ import androidx.compose.material.icons.automirrored.outlined.AirplaneTicket
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,12 +24,17 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.flourishtavelapp.R
+import com.example.flourishtavelapp.data.api.RetrofitClient
+import com.example.flourishtavelapp.data.model.Category
+import com.example.flourishtavelapp.data.model.TourSummaryDto
 import com.example.flourishtavelapp.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,11 +43,43 @@ fun HomepageScreen(
     userName: String,
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
-    onTourClick: () -> Unit,
+    onTourClick: (String) -> Unit, // Dynamic tour click with ID
     onAssistantClick: () -> Unit,
     onProfileClick: () -> Unit,
     onCategoryClick: (String) -> Unit
 ) {
+    val context = LocalContext.current
+    var categoriesList by remember { mutableStateOf<List<Category>>(emptyList()) }
+    var toursList by remember { mutableStateOf<List<TourSummaryDto>>(emptyList()) }
+    var isLoadingTours by remember { mutableStateOf(true) }
+    var isLoadingCategories by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        // Load categories
+        try {
+            val response = RetrofitClient.bookingApiService.getCategories()
+            if (response.isSuccessful) {
+                categoriesList = response.body()?.data ?: emptyList()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            isLoadingCategories = false
+        }
+
+        // Load tours
+        try {
+            val response = RetrofitClient.bookingApiService.getTours(size = 10)
+            if (response.isSuccessful) {
+                toursList = response.body()?.data?.content ?: emptyList()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            isLoadingTours = false
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -126,33 +165,63 @@ fun HomepageScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(horizontal = 20.dp)
-            ) {
-                item {
-                    FeaturedTourCard(
-                        title = "Kỳ quan Bangkok",
-                        subtitle = "Grand Palace & Wat Arun",
-                        price = "2.490.000đ",
-                        rating = "4.9",
-                        badge = "Bán chạy nhất",
-                        badgeColor = PrimaryGreen,
-                        imageRes = R.drawable.bangkook_bg,
-                        onClick = { onCategoryClick("Kỳ quan Bangkok") }
-                    )
+            if (isLoadingTours) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = PrimaryGreen)
                 }
-                item {
-                    FeaturedTourCard(
-                        title = "Đảo Phi Phi",
-                        subtitle = "Lặn biển & hoàng hôn",
-                        price = "3.150.000đ",
-                        rating = null,
-                        badge = "Tour biển",
-                        badgeColor = Color(0xFF2196F3),
-                        imageRes = R.drawable.phiphi_bg,
-                        onClick = { onCategoryClick("Đảo Phi Phi") }
-                    )
+            } else {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    contentPadding = PaddingValues(horizontal = 20.dp)
+                ) {
+                    if (toursList.isEmpty()) {
+                        // Fallback to mock data if empty
+                        item {
+                            FeaturedTourCard(
+                                title = "Kỳ quan Bangkok",
+                                subtitle = "Grand Palace & Wat Arun",
+                                price = "2.490.000đ",
+                                rating = "4.9",
+                                badge = "Bán chạy nhất",
+                                badgeColor = PrimaryGreen,
+                                imageUrl = null,
+                                fallbackImageRes = R.drawable.bangkook_bg,
+                                onClick = { onTourClick("234c6269-9382-42e4-ab11-ca518e4ddb4b") }
+                            )
+                        }
+                        item {
+                            FeaturedTourCard(
+                                title = "Đảo Phi Phi",
+                                subtitle = "Lặn biển & hoàng hôn",
+                                price = "3.150.000đ",
+                                rating = "4.8",
+                                badge = "Tour biển",
+                                badgeColor = Color(0xFF2196F3),
+                                imageUrl = null,
+                                fallbackImageRes = R.drawable.phiphi_bg,
+                                onClick = { onTourClick("234c6269-9382-42e4-ab11-ca518e4ddb4b") } // fall back tour ID
+                            )
+                        }
+                    } else {
+                        items(toursList) { tour ->
+                            FeaturedTourCard(
+                                title = tour.title,
+                                subtitle = tour.description ?: "Trải nghiệm đặc sắc",
+                                price = String.format("%,.0fđ", tour.basePrice),
+                                rating = "4.9",
+                                badge = tour.status ?: "Khám phá",
+                                badgeColor = PrimaryGreen,
+                                imageUrl = tour.thumbnailUrl,
+                                fallbackImageRes = R.drawable.bangkook_bg,
+                                onClick = { onTourClick(tour.id) }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -169,52 +238,99 @@ fun HomepageScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Region grid: 2 columns
-            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+            if (isLoadingCategories) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    RegionCard(
-                        name = "Chiang Mai",
-                        imageRes = R.drawable.chiangmai_bg,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(140.dp),
-                        onClick = { onCategoryClick("Chiang Mai") }
-                    )
-                    RegionCard(
-                        name = "Phuket",
-                        imageRes = R.drawable.phuket_bg,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(140.dp),
-                        onClick = { onCategoryClick("Phuket") }
-                    )
+                    CircularProgressIndicator(color = PrimaryGreen)
                 }
+            } else {
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    if (categoriesList.isEmpty()) {
+                        // Region grid fallback
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            RegionCard(
+                                name = "Chiang Mai",
+                                imageRes = R.drawable.chiangmai_bg,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(140.dp),
+                                onClick = { onCategoryClick("Chiang Mai") }
+                            )
+                            RegionCard(
+                                name = "Phuket",
+                                imageRes = R.drawable.phuket_bg,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(140.dp),
+                                onClick = { onCategoryClick("Phuket") }
+                            )
+                        }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    RegionCard(
-                        name = "Bangkok",
-                        imageRes = R.drawable.bangkook_bg,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(140.dp),
-                        onClick = { onCategoryClick("Bangkok") }
-                    )
-                    RegionCard(
-                        name = "Pattaya",
-                        imageRes = R.drawable.venezia_bg,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(140.dp),
-                        onClick = { onCategoryClick("Pattaya") }
-                    )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            RegionCard(
+                                name = "Bangkok",
+                                imageRes = R.drawable.bangkook_bg,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(140.dp),
+                                onClick = { onCategoryClick("Bangkok") }
+                            )
+                            RegionCard(
+                                name = "Pattaya",
+                                imageRes = R.drawable.venezia_bg,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(140.dp),
+                                onClick = { onCategoryClick("Pattaya") }
+                            )
+                        }
+                    } else {
+                        // Render loaded categories in pairs
+                        val chunkedCategories = categoriesList.chunked(2)
+                        chunkedCategories.forEachIndexed { index, chunk ->
+                            if (index > 0) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                chunk.forEach { category ->
+                                    val localImage = when (category.slug.lowercase()) {
+                                        "bangkok" -> R.drawable.bangkook_bg
+                                        "chiang-mai", "chiangmai" -> R.drawable.chiangmai_bg
+                                        "phuket" -> R.drawable.phuket_bg
+                                        "pattaya" -> R.drawable.venezia_bg
+                                        else -> R.drawable.chiangmai_bg
+                                    }
+                                    RegionCard(
+                                        name = category.name,
+                                        imageRes = localImage,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(140.dp),
+                                        onClick = { onCategoryClick(category.name) }
+                                    )
+                                }
+                                // If the row has only one item, fill the rest with an empty space to maintain structure
+                                if (chunk.size < 2) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -299,7 +415,8 @@ private fun FeaturedTourCard(
     rating: String?,
     badge: String,
     badgeColor: Color,
-    imageRes: Int,
+    imageUrl: String?,
+    fallbackImageRes: Int,
     onClick: () -> Unit
 ) {
     Card(
@@ -316,12 +433,23 @@ private fun FeaturedTourCard(
                     .fillMaxWidth()
                     .height(140.dp)
             ) {
-                Image(
-                    painter = painterResource(id = imageRes),
-                    contentDescription = title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                if (!imageUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        placeholder = painterResource(id = fallbackImageRes),
+                        error = painterResource(id = fallbackImageRes)
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = fallbackImageRes),
+                        contentDescription = title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
                 // Badge
                 Surface(
                     modifier = Modifier

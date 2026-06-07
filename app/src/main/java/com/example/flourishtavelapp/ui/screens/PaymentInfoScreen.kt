@@ -1,5 +1,6 @@
 package com.example.flourishtavelapp.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -14,11 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtavelapp.data.session.SessionManager
 
 @Composable
 fun PaymentInfoScreen(
@@ -38,15 +41,38 @@ fun PaymentInfoScreen(
     onNoteChange: (String) -> Unit,
     onBack: () -> Unit,
     onContinue: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    promoDiscount: Long = 0L // added
 ) {
+    // Hardware back press behavior
+    BackHandler {
+        onBack()
+    }
+
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+
+    // Auto prefill info from SessionManager
+    LaunchedEffect(Unit) {
+        val userInfo = sessionManager.getUserInfo()
+        if (userInfo != null) {
+            if (name.isBlank() || name == "Nguyễn Văn A") {
+                onNameChange(userInfo.fullName)
+            }
+            if (email.isBlank() || email == "example@mail.com") {
+                onEmailChange(userInfo.email)
+            }
+            if (phone.isBlank() || phone == "090 123 4567") {
+                onPhoneChange(userInfo.phone ?: "")
+            }
+        }
+    }
+
     val adultPrice = 1000000
     val childPrice = 450000
     val totalAmount = (adultCount.toLong() * adultPrice) + (childCount.toLong() * childPrice)
-    // For demo matching the image logic, let's keep a consistent total or recalculate
-    // Image says 16.198.200 but previous step said 2.450.000. 
-    // Let's use the 2.450.000 logic: 2 adults (2M) + 1 child (450k) = 2.45M
-    
+    val displayTotal = if (totalAmount - promoDiscount > 0) totalAmount - promoDiscount else 0L
+
     Box(modifier = modifier.fillMaxSize().background(NatureGreenBackground)) {
         Column(
             modifier = Modifier
@@ -65,7 +91,7 @@ fun PaymentInfoScreen(
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    "Bank Transfer",
+                    "Contact Info",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = DarkTextColor
@@ -73,7 +99,7 @@ fun PaymentInfoScreen(
                 Spacer(modifier = Modifier.weight(1.2f))
             }
 
-            // Step Indicator - Redesigned to match image
+            // Step Indicator
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -87,7 +113,7 @@ fun PaymentInfoScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                // Tour Preview Card (Vịnh Maya Phi Phi)
+                // Tour Preview Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(32.dp),
@@ -124,7 +150,7 @@ fun PaymentInfoScreen(
                             Text(" 15/10 - 20/10/2023", color = SecondaryTextColor, fontSize = 12.sp)
                             Spacer(modifier = Modifier.width(16.dp))
                             Icon(Icons.Default.People, null, tint = SecondaryTextColor, modifier = Modifier.size(14.dp))
-                            Text(" $adultCount người", color = SecondaryTextColor, fontSize = 12.sp)
+                            Text(" ${adultCount + childCount} người", color = SecondaryTextColor, fontSize = 12.sp)
                         }
                     }
                 }
@@ -172,18 +198,27 @@ fun PaymentInfoScreen(
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("1.000.000 VND x $adultCount người", color = SecondaryTextColor, fontSize = 12.sp)
-                            Text("%,d VND".format(adultCount * 1000000L), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("Adults (%,dđ x $adultCount)".format(adultPrice), color = SecondaryTextColor, fontSize = 12.sp)
+                            Text("%,dđ".format(adultCount * adultPrice.toLong()), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Giảm 10%", color = Color(0xFF00BFA5), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("- %,d VND".format((adultCount * 1000000L * 0.1).toLong()), color = Color(0xFF00BFA5), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        if (childCount > 0) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Children (%,dđ x $childCount)".format(childPrice), color = SecondaryTextColor, fontSize = 12.sp)
+                                Text("%,dđ".format(childCount * childPrice.toLong()), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        }
+                        if (promoDiscount > 0) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Mã giảm giá", color = Color(0xFF00BFA5), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text("-%,dđ".format(promoDiscount), color = Color(0xFF00BFA5), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
                         }
                         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), thickness = 1.dp, color = Color.LightGray.copy(alpha = 0.3f))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text("Tổng cộng", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Text("%,d VND".format(totalAmount), fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = PrimaryGreen)
+                            Text("%,dđ".format(displayTotal), fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = PrimaryGreen)
                         }
                     }
                 }
@@ -214,7 +249,7 @@ fun PaymentInfoScreen(
 }
 
 @Composable
-fun StepItem(number: String, label: String, isActive: Boolean) {
+private fun StepItem(number: String, label: String, isActive: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Surface(
             modifier = Modifier.size(28.dp),
@@ -232,7 +267,7 @@ fun StepItem(number: String, label: String, isActive: Boolean) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PaymentInputField(label: String, value: String, onValueChange: (String) -> Unit, placeholder: String, singleLine: Boolean = true) {
+private fun PaymentInputField(label: String, value: String, onValueChange: (String) -> Unit, placeholder: String, singleLine: Boolean = true) {
     Column {
         Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SecondaryTextColor)
         Spacer(modifier = Modifier.height(8.dp))
@@ -254,7 +289,7 @@ fun PaymentInputField(label: String, value: String, onValueChange: (String) -> U
 }
 
 @Composable
-fun GenderButton(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+private fun GenderButton(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
     Surface(
         modifier = modifier.height(48.dp).clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
@@ -271,3 +306,4 @@ fun GenderButton(label: String, icon: androidx.compose.ui.graphics.vector.ImageV
         }
     }
 }
+

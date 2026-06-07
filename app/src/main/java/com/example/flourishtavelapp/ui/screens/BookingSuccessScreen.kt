@@ -1,5 +1,6 @@
 package com.example.flourishtavelapp.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -30,13 +31,20 @@ fun BookingSuccessScreen(
     idCard: String,
     gender: String,
     onHomeClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    bookingId: String = "",
+    orderId: String = "",
+    promoDiscount: Long = 0L // added
 ) {
+    // Intercept back button to return to home since booking is completed
+    BackHandler {
+        onHomeClick()
+    }
+
     val adultPrice = 1000000
     val childPrice = 450000
     val totalAmount = (adultCount.toLong() * adultPrice) + (childCount.toLong() * childPrice)
-    val discount = (totalAmount * 0.1).toLong()
-    val finalTotal = totalAmount - discount
+    val finalTotal = if (totalAmount - promoDiscount > 0) totalAmount - promoDiscount else 0L
 
     Box(modifier = modifier.fillMaxSize().background(NatureGreenBackground)) {
         Column(
@@ -131,7 +139,7 @@ fun BookingSuccessScreen(
                                 Text(" 5 Ngày 4 Đêm", color = SecondaryTextColor, fontSize = 12.sp)
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Icon(Icons.Default.People, null, tint = SecondaryTextColor, modifier = Modifier.size(14.dp))
-                                Text(" $adultCount Người", color = SecondaryTextColor, fontSize = 12.sp)
+                                Text(" ${adultCount + childCount} Người", color = SecondaryTextColor, fontSize = 12.sp)
                             }
                         }
                     }
@@ -163,12 +171,20 @@ fun BookingSuccessScreen(
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Mã vé điện tử của bạn", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = DarkTextColor)
+                        
+                        if (bookingId.isNotEmpty()) {
+                            Text("Mã đặt chỗ: $bookingId", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = PrimaryGreen, modifier = Modifier.padding(top = 4.dp))
+                        }
+                        if (orderId.isNotEmpty()) {
+                            Text("Mã đơn hàng: $orderId", fontSize = 12.sp, color = SecondaryTextColor)
+                        }
+
                         Text(
                             "Lưu mã QR này để check-in tại điểm hẹn một cách nhanh chóng.",
                             textAlign = TextAlign.Center,
                             fontSize = 12.sp,
                             color = SecondaryTextColor,
-                            modifier = Modifier.padding(top = 4.dp)
+                            modifier = Modifier.padding(top = 8.dp)
                         )
                     }
                 }
@@ -251,7 +267,7 @@ fun BookingSuccessScreen(
 }
 
 @Composable
-fun SuccessInfoRow(label: String, value: String) {
+private fun SuccessInfoRow(label: String, value: String) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween
@@ -260,3 +276,4 @@ fun SuccessInfoRow(label: String, value: String) {
         Text(value, fontWeight = FontWeight.Bold, color = DarkTextColor, fontSize = 14.sp)
     }
 }
+

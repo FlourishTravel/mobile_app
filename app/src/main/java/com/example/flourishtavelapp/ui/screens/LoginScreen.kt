@@ -24,6 +24,8 @@ import com.example.flourishtavelapp.data.session.SessionManager
 import com.example.flourishtavelapp.data.model.UserInfo
 import kotlinx.coroutines.launch
 
+import androidx.activity.compose.BackHandler
+
 @Composable
 fun LoginScreen(
     onLoginSuccess: (UserInfo) -> Unit,
@@ -31,6 +33,7 @@ fun LoginScreen(
     onRegisterClick: () -> Unit,
     onBack: () -> Unit = {}
 ) {
+    BackHandler(onBack = onBack)
     var emailInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }

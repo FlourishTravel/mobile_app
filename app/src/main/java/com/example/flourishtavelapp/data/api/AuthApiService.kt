@@ -1,6 +1,8 @@
 package com.example.flourishtavelapp.data.api
 
 import com.example.flourishtavelapp.data.model.ApiResponseAuthResponse
+import com.example.flourishtavelapp.data.model.ApiResponseVoid
+import com.example.flourishtavelapp.data.model.ChangePasswordRequest
 import com.example.flourishtavelapp.data.model.LoginRequest
 import com.example.flourishtavelapp.data.model.RegisterRequest
 import retrofit2.Response
@@ -13,4 +15,10 @@ interface AuthApiService {
 
     @POST("auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<ApiResponseAuthResponse>
+
+    @POST("auth/logout")
+    suspend fun logout(): Response<ApiResponseVoid>
+
+    @POST("auth/change-password")
+    suspend fun changePassword(@Body request: ChangePasswordRequest): Response<ApiResponseVoid>
 }

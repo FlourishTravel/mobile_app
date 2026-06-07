@@ -32,5 +32,12 @@ data class UserInfo(
     @SerializedName("email") val email: String,
     @SerializedName("fullName") val fullName: String,
     @SerializedName("role") val role: String,
-    @SerializedName("avatarUrl") val avatarUrl: String?
+    @SerializedName("avatarUrl") val avatarUrl: String?,
+    @SerializedName("phone") val phone: String? = null
 )
+
+data class ChangePasswordRequest(
+    @SerializedName("oldPassword") val oldPassword: String,
+    @SerializedName("newPassword") val newPassword: String
+)
+

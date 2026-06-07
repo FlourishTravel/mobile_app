@@ -14,6 +14,7 @@ import com.example.flourishtavelapp.ui.components.FlourishBottomNavigation
 import com.example.flourishtavelapp.ui.screens.*
 import com.example.flourishtavelapp.ui.theme.FlourishTavelAppTheme
 import com.example.flourishtavelapp.data.session.SessionManager
+import com.example.flourishtavelapp.data.api.RetrofitClient
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,10 +40,18 @@ fun AppNavigation() {
     var isLoggedIn by remember { mutableStateOf(false) }
     var isGuideLoggedIn by remember { mutableStateOf(false) }
     var selectedCategoryForActivities by remember { mutableStateOf("") }
+    var selectedTourId by remember { mutableStateOf<String?>(null) }
+    var selectedSessionId by remember { mutableStateOf<String?>(null) }
 
     // SharedPreferences Session Manager
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
+
+    // Initialize Retrofit Client
+    remember {
+        RetrofitClient.init(sessionManager)
+        true
+    }
 
     // Guide State
     val currentGuide = com.example.flourishtavelapp.ui.screens.mockGuideAccounts.first()
@@ -66,6 +75,13 @@ fun AppNavigation() {
     var bookingGender by remember { mutableStateOf("Nam") }
     var bookingNote by remember { mutableStateOf("") }
 
+    // Backend booking response and session details
+    var bookingSessionId by remember { mutableStateOf("") }
+    var bookingPromoCode by remember { mutableStateOf<String?>(null) }
+    var bookingPromoDiscount by remember { mutableLongStateOf(0L) }
+    var createdBookingId by remember { mutableStateOf("") }
+    var createdOrderId by remember { mutableStateOf("") }
+
     // Auto-Login: Check if token exists on app launch
     LaunchedEffect(Unit) {
         if (sessionManager.isLoggedIn()) {
@@ -74,6 +90,7 @@ fun AppNavigation() {
                 userName = user.fullName
                 userEmail = user.email
                 userHandle = "@${user.email.substringBefore("@")}"
+                userPhone = user.phone ?: ""
                 if (user.role.equals("GUIDE", ignoreCase = true)) {
                     isGuideLoggedIn = true
                     navState = NavigationState.GuideHome
@@ -110,6 +127,7 @@ fun AppNavigation() {
                     userName = user.fullName
                     userEmail = user.email
                     userHandle = "@${user.email.substringBefore("@")}"
+                    userPhone = user.phone ?: ""
                     navState = NavigationState.MainApp
                     selectedTab = 0
                 },
@@ -118,6 +136,7 @@ fun AppNavigation() {
                     userName = user.fullName
                     userEmail = user.email
                     userHandle = "@${user.email.substringBefore("@")}"
+                    userPhone = user.phone ?: ""
                     navState = NavigationState.GuideHome
                 },
                 onRegisterClick = { navState = NavigationState.Register },
@@ -132,25 +151,42 @@ fun AppNavigation() {
                     userName = user.fullName
                     userEmail = user.email
                     userHandle = "@${user.email.substringBefore("@")}"
+                    userPhone = user.phone ?: ""
                     navState = NavigationState.MainApp
                     selectedTab = 0
                 },
                 onLoginClick = { navState = NavigationState.Login },
                 onBack = { navState = NavigationState.Login }
             )
-            NavigationState.TourDetail -> TourDetailScreen(
-                onBack = { navState = NavigationState.MainApp },
-                onBookNowClick = { navState = NavigationState.BookingReview }
-            )
+            NavigationState.TourDetail -> {
+                val tourId = selectedTourId
+                if (tourId != null) {
+                    TourDetailScreen(
+                        tourId = tourId,
+                        onBack = { navState = NavigationState.MainApp },
+                        onBookNowClick = { sId ->
+                            selectedSessionId = sId
+                            navState = NavigationState.BookingReview
+                        }
+                    )
+                } else {
+                    LaunchedEffect(Unit) { navState = NavigationState.MainApp }
+                }
+            }
             NavigationState.BookingReview -> BookingReviewScreen(
                 initialAdultCount = adultCount,
                 initialChildCount = childCount,
                 onBack = { navState = NavigationState.TourDetail },
-                onProceed = { adults, children ->
+                onProceed = { adults, children, sessionId, promoCode, discount ->
                     adultCount = adults
                     childCount = children
+                    bookingSessionId = sessionId
+                    bookingPromoCode = promoCode
+                    bookingPromoDiscount = discount
                     navState = NavigationState.PaymentInfo
-                }
+                },
+                initialTourId = selectedTourId,
+                initialSessionId = selectedSessionId
             )
             NavigationState.PaymentInfo -> PaymentInfoScreen(
                 adultCount = adultCount,
@@ -168,13 +204,27 @@ fun AppNavigation() {
                 onGenderChange = { bookingGender = it },
                 onNoteChange = { bookingNote = it },
                 onBack = { navState = NavigationState.BookingReview },
-                onContinue = { navState = NavigationState.BankTransfer }
+                onContinue = { navState = NavigationState.BankTransfer },
+                promoDiscount = bookingPromoDiscount
             )
             NavigationState.BankTransfer -> BankTransferScreen(
                 adultCount = adultCount,
                 childCount = childCount,
                 onBack = { navState = NavigationState.PaymentInfo },
-                onComplete = { navState = NavigationState.BookingSuccess }
+                onComplete = { bookingId, orderId ->
+                    createdBookingId = bookingId
+                    createdOrderId = orderId
+                    navState = NavigationState.BookingSuccess
+                },
+                sessionId = bookingSessionId,
+                promoCode = bookingPromoCode,
+                promoDiscount = bookingPromoDiscount,
+                bookingName = bookingName,
+                bookingEmail = bookingEmail,
+                bookingPhone = bookingPhone,
+                bookingIdCard = bookingIdCard,
+                bookingGender = bookingGender,
+                bookingNote = bookingNote
             )
             NavigationState.BookingSuccess -> BookingSuccessScreen(
                 adultCount = adultCount,
@@ -183,7 +233,10 @@ fun AppNavigation() {
                 email = bookingEmail,
                 idCard = bookingIdCard,
                 gender = bookingGender,
-                onHomeClick = onBackToHome
+                onHomeClick = onBackToHome,
+                bookingId = createdBookingId,
+                orderId = createdOrderId,
+                promoDiscount = bookingPromoDiscount
             )
             NavigationState.Activities -> ActivitiesScreen(
                 initialCategoryLabel = selectedCategoryForActivities,
@@ -234,11 +287,12 @@ fun AppNavigation() {
                         userName = if (isLoggedIn) userName else "Khách",
                         modifier = Modifier.padding(innerPadding),
                         onBack = { },
-                        onTourClick = {
+                        onTourClick = { tourId ->
                             if (!isLoggedIn) {
                                 navState = NavigationState.Login
                             } else {
-                                selectedTab = 1
+                                selectedTourId = tourId
+                                navState = NavigationState.TourDetail
                             }
                         },
                         onAssistantClick = {
@@ -280,7 +334,10 @@ fun AppNavigation() {
                         modifier = Modifier.padding(innerPadding),
                         onBack = onBackToHome,
                         onProfileClick = onGoToProfile,
-                        onTourDetailClick = { navState = NavigationState.TourDetail }
+                        onTourDetailClick = { tourId ->
+                            selectedTourId = tourId
+                            navState = NavigationState.TourDetail
+                        }
                     )
                     4 -> {
                         if (isLoggedIn) {
