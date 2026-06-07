@@ -26,6 +26,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.example.flourishtavelapp.R
+import com.example.flourishtavelapp.data.api.RetrofitClient
+import com.example.flourishtavelapp.data.model.TourSummaryDto
 import com.example.flourishtavelapp.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,6 +40,28 @@ fun ExploreScreen(
     onProfileClick: () -> Unit,
     onTourDetailClick: (String) -> Unit = {}
 ) {
+    val categories = listOf("Tất cả", "Bangkok", "Chiang Mai", "Phuket", "Pattaya")
+    var selectedCategory by remember { mutableStateOf("Tất cả") }
+
+    var toursList by remember { mutableStateOf<List<TourSummaryDto>>(emptyList()) }
+    var isLoadingTours by remember { mutableStateOf(true) }
+
+    // Fetch tours whenever selected category changes
+    LaunchedEffect(selectedCategory) {
+        isLoadingTours = true
+        try {
+            val destinationQuery = if (selectedCategory == "Tất cả") null else selectedCategory
+            val response = RetrofitClient.bookingApiService.getTours(destination = destinationQuery)
+            if (response.isSuccessful) {
+                toursList = response.body()?.data?.content ?: emptyList()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            isLoadingTours = false
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -86,7 +112,7 @@ fun ExploreScreen(
             ) {
                 Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
                     Image(
-                        painter = painterResource(id = com.example.flourishtavelapp.R.drawable.thailan),
+                        painter = painterResource(id = R.drawable.thailan),
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -177,9 +203,7 @@ fun ExploreScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Categories
-            val categories = listOf("Tất cả", "Bangkok", "Chiang Mai", "Phuket", "Đảo")
-            var selectedCategory by remember { mutableStateOf("Tất cả") }
+            // Categories list
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(categories) { category ->
                     val isSelected = selectedCategory == category
@@ -217,7 +241,7 @@ fun ExploreScreen(
             ) {
                 Box {
                     Image(
-                        painter = painterResource(id = com.example.flourishtavelapp.R.drawable.bandodulichthailan_bg),
+                        painter = painterResource(id = R.drawable.bandodulichthailan_bg),
                         contentDescription = "Bản đồ ",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -251,7 +275,7 @@ fun ExploreScreen(
                         title = "Chợ đêm Jodd Fairs",
                         location = "Rama IX, Bangkok • 5.1k người tham gia",
                         tag = "SẦM UẤT TỐI NAY",
-                        imageResId = com.example.flourishtavelapp.R.drawable.joddfairs_bg
+                        imageResId = R.drawable.joddfairs_bg
                     )
                 }
                 item {
@@ -259,44 +283,71 @@ fun ExploreScreen(
                         title = "Chùa Wat Pho",
                         location = " Ngoài chùa Phật Ngọc, chùa Phật Nằm cũng là một ngôi chùa nổi tiếng khác.",
                         tag = "CÒN VÀI VÉ",
-                        imageResId = com.example.flourishtavelapp.R.drawable.phat_bg
+                        imageResId = R.drawable.phat_bg
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Curated For You
+            // Curated For You (Dynamic Tours)
             Text("Địa điểm nổi tiếng Thái Lan", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DarkTextColor)
             Spacer(modifier = Modifier.height(16.dp))
-            CuratedExploreCard(
-                title = "Chùa Wat Arun",
-                price = "$15",
-                location = "Bangkok, Thái Lan",
-                description = "Chiêm ngưỡng vẻ đẹp lộng lẫy của 'Chùa Bình Minh' bên bờ sông Chao Phraya với kiến trúc khảm sành sứ độc đáo.",
-                tags = listOf("Văn hóa", "Kiến trúc", "Lịch sử"),
-                imageResId = com.example.flourishtavelapp.R.drawable.awat_bg,
-                onCardClick = { onTourDetailClick("wat_arun") }
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            CuratedExploreCard(
-                title = "Vịnh Maya, Phi Phi",
-                price = "$45",
-                location = "Krabi/Phuket",
-                description = "Khám phá bãi biển thiên đường nổi tiếng thế giới với làn nước xanh ngọc bích và những vách núi đá vôi hùng vĩ.",
-                tags = listOf("Biển đảo", "Thiên nhiên", "Lặn biển"),
-                imageResId = com.example.flourishtavelapp.R.drawable.maya_bg,
-                onCardClick = { onTourDetailClick("maya_phi_phi") }
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            CuratedExploreCard(
-                title = "Phố cổ Chiang Mai",
-                price = "$25",
-                location = "Chiang Mai, Thái Lan",
-                description = "Tận hưởng không khí yên bình, những ngôi chùa cổ kính và trải nghiệm lớp học nấu ăn truyền thống Thái Lan.",
-                tags = listOf("Ẩm thực", "Bình yên", "Thủ công"),
-                imageResId = com.example.flourishtavelapp.R.drawable.chiangmai_bg
-            )
+
+            if (isLoadingTours) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = PrimaryGreen)
+                }
+            } else {
+                if (toursList.isEmpty()) {
+                    // Fallback to static cards if list empty
+                    CuratedExploreCard(
+                        title = "Chùa Wat Arun",
+                        price = "2.500.000đ",
+                        location = "Bangkok, Thái Lan",
+                        description = "Chiêm ngưỡng vẻ đẹp lộng lẫy của 'Chùa Bình Minh' bên bờ sông Chao Phraya với kiến trúc khảm sành sứ độc đáo.",
+                        tags = listOf("Văn hóa", "Kiến trúc", "Lịch sử"),
+                        imageUrl = null,
+                        fallbackImageResId = R.drawable.awat_bg,
+                        onCardClick = { onTourDetailClick("234c6269-9382-42e4-ab11-ca518e4ddb4b") }
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    CuratedExploreCard(
+                        title = "Vịnh Maya, Phi Phi",
+                        price = "3.150.000đ",
+                        location = "Krabi/Phuket",
+                        description = "Khám phá bãi biển thiên đường nổi tiếng thế giới với làn nước xanh ngọc bích và những vách núi đá vôi hùng vĩ.",
+                        tags = listOf("Biển đảo", "Thiên nhiên", "Lặn biển"),
+                        imageUrl = null,
+                        fallbackImageResId = R.drawable.maya_bg,
+                        onCardClick = { onTourDetailClick("234c6269-9382-42e4-ab11-ca518e4ddb4b") }
+                    )
+                } else {
+                    toursList.forEachIndexed { index, tour ->
+                        if (index > 0) {
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
+                        CuratedExploreCard(
+                            title = tour.title,
+                            price = String.format("%,.0fđ", tour.basePrice),
+                            location = tour.category?.name ?: "Thái Lan",
+                            description = tour.description ?: "Khám phá những nét đẹp văn hóa độc đáo.",
+                            tags = listOf(
+                                "${tour.durationDays} Ngày ${tour.durationNights} Đêm",
+                                tour.category?.name ?: "Tour"
+                            ),
+                            imageUrl = tour.thumbnailUrl,
+                            fallbackImageResId = R.drawable.awat_bg,
+                            onCardClick = { onTourDetailClick(tour.id) }
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(80.dp))
         }
@@ -370,7 +421,8 @@ fun CuratedExploreCard(
     location: String, 
     description: String, 
     tags: List<String>,
-    imageResId: Int? = null,
+    imageUrl: String?,
+    fallbackImageResId: Int,
     onCardClick: () -> Unit = {}
 ) {
     Card(
@@ -380,15 +432,22 @@ fun CuratedExploreCard(
     ) {
         Column {
             Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
-                if (imageResId != null) {
+                if (!imageUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        placeholder = painterResource(id = fallbackImageResId),
+                        error = painterResource(id = fallbackImageResId)
+                    )
+                } else {
                     Image(
-                        painter = painterResource(id = imageResId),
+                        painter = painterResource(id = fallbackImageResId),
                         contentDescription = title,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
-                } else {
-                    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFE0E0E0)))
                 }
 
                 Row(
@@ -410,12 +469,13 @@ fun CuratedExploreCard(
             }
             Column(modifier = Modifier.padding(20.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(title, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = DarkTextColor)
-                    Text(price, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = PrimaryGreen)
+                    Text(title, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = DarkTextColor, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(price, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = PrimaryGreen)
                 }
                 Text(location, color = SecondaryTextColor, fontSize = 13.sp)
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(description, color = SecondaryTextColor, fontSize = 14.sp, lineHeight = 20.sp)
+                Text(description, color = SecondaryTextColor, fontSize = 14.sp, lineHeight = 20.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     tags.forEach { tag ->

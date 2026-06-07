@@ -16,6 +16,7 @@ class SessionManager(context: Context) {
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_ROLE = "user_role"
         private const val KEY_USER_AVATAR = "user_avatar"
+        private const val KEY_USER_PHONE = "user_phone"
     }
 
     fun saveSession(accessToken: String, refreshToken: String, user: UserInfo) {
@@ -27,6 +28,18 @@ class SessionManager(context: Context) {
             putString(KEY_USER_NAME, user.fullName)
             putString(KEY_USER_ROLE, user.role)
             putString(KEY_USER_AVATAR, user.avatarUrl)
+            putString(KEY_USER_PHONE, user.phone)
+            apply()
+        }
+    }
+
+    fun updateUserInfo(user: UserInfo) {
+        prefs.edit().apply {
+            putString(KEY_USER_NAME, user.fullName)
+            putString(KEY_USER_AVATAR, user.avatarUrl)
+            putString(KEY_USER_EMAIL, user.email)
+            putString(KEY_USER_ROLE, user.role)
+            putString(KEY_USER_PHONE, user.phone)
             apply()
         }
     }
@@ -41,7 +54,8 @@ class SessionManager(context: Context) {
         val name = prefs.getString(KEY_USER_NAME, "") ?: ""
         val role = prefs.getString(KEY_USER_ROLE, "") ?: ""
         val avatarUrl = prefs.getString(KEY_USER_AVATAR, null)
-        return UserInfo(id, email, name, role, avatarUrl)
+        val phone = prefs.getString(KEY_USER_PHONE, null)
+        return UserInfo(id, email, name, role, avatarUrl, phone)
     }
 
     fun isLoggedIn(): Boolean = getAccessToken() != null

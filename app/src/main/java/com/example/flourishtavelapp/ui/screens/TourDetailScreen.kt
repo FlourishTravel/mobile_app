@@ -1,5 +1,7 @@
 package com.example.flourishtavelapp.ui.screens
 
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,30 +22,74 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.flourishtavelapp.R
+import com.example.flourishtavelapp.data.api.RetrofitClient
+import com.example.flourishtavelapp.data.model.*
 import com.example.flourishtavelapp.ui.theme.*
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun TourDetailScreen(
+    tourId: String,
     onBack: () -> Unit,
-    onBookNowClick: () -> Unit,
+    onBookNowClick: (String) -> Unit, // passes the selected sessionId
     modifier: Modifier = Modifier
 ) {
+    BackHandler {
+        onBack()
+    }
+    
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    
+    var tourDetail by remember { mutableStateOf<TourDetailDto?>(null) }
+    var isFavorited by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(true) }
+    
     var selectedTab by remember { mutableIntStateOf(0) }
     var adultCount by remember { mutableIntStateOf(2) }
     var childCount by remember { mutableIntStateOf(0) }
-    var selectedDateIndex by remember { mutableIntStateOf(1) }
+    var selectedDateIndex by remember { mutableIntStateOf(0) }
 
-    // Price calculation
-    val adultPrice = 2500000L
-    val childPrice = 1250000L
-    val discount = 50000L
+    LaunchedEffect(tourId) {
+        isLoading = true
+        // Fetch details
+        try {
+            val response = RetrofitClient.bookingApiService.getTourDetail(tourId)
+            if (response.isSuccessful) {
+                tourDetail = response.body()?.data
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // Fetch favorites to see if this tour is favorited
+        try {
+            val favsResponse = RetrofitClient.favoriteApiService.getFavorites()
+            if (favsResponse.isSuccessful) {
+                val favorites = favsResponse.body()?.data
+                isFavorited = favorites?.any { it.id == tourId } == true
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            isLoading = false
+        }
+    }
+
+    // Pricing calculation
+    val adultPrice = tourDetail?.basePrice?.toLong() ?: 2500000L
+    val childPrice = (adultPrice * 0.5).toLong() // 50% discount for children
+    val discount = 50000L // default promo code discount
     val totalPrice = (adultCount * adultPrice) + (childCount * childPrice) - discount
     val displayPrice = if (totalPrice > 0) totalPrice else 0L
 
@@ -52,106 +98,158 @@ fun TourDetailScreen(
         "Thông tin chuyến đi",
         "Thông tin thêm",
         "Chính sách hủy",
-        "Câu hỏi thường gặp"
+        "Đánh giá"
     )
 
-    Box(modifier = modifier.fillMaxSize().background(Color.White)) {
-        LazyColumn(
+    if (isLoading) {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 100.dp)
+                .background(Color.White),
+            contentAlignment = Alignment.Center
         ) {
-            // ── Hero / Header Image ──
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.awat_bg),
-                        contentDescription = "Wat Arun",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+            CircularProgressIndicator(color = PrimaryGreen)
+        }
+    } else if (tourDetail == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Không thể tải thông tin tour.", color = SecondaryTextColor)
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onBack, colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)) {
+                    Text("Quay lại", color = Color.White)
+                }
+            }
+        }
+    } else {
+        val detail = tourDetail!!
+        val headerImageUrl = detail.images?.firstOrNull()?.imageUrl ?: detail.thumbnailUrl
+
+        Box(modifier = modifier.fillMaxSize().background(Color.White)) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 100.dp)
+            ) {
+                // ── Hero / Header Image ──
+                item {
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Black.copy(alpha = 0.3f),
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.5f)
+                            .fillMaxWidth()
+                            .height(300.dp)
+                    ) {
+                        if (!headerImageUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = headerImageUrl,
+                                contentDescription = detail.title,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                                placeholder = painterResource(id = R.drawable.awat_bg),
+                                error = painterResource(id = R.drawable.awat_bg)
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(id = R.drawable.awat_bg),
+                                contentDescription = detail.title,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Black.copy(alpha = 0.3f),
+                                            Color.Transparent,
+                                            Color.Black.copy(alpha = 0.5f)
+                                        )
                                     )
                                 )
-                            )
-                    )
+                        )
 
-                    // Header buttons over image
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding()
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(40.dp),
-                            shape = CircleShape,
-                            color = Color.Black.copy(alpha = 0.4f)
+                        // Header buttons over image
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .statusBarsPadding()
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(onClick = onBack) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
-                                    tint = Color.White
-                                )
+                            // Back Button
+                            Surface(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clickable { onBack() },
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.45f)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+
+                            // Share / Action button
+                            Surface(
+                                modifier = Modifier.size(36.dp),
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.45f)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Share,
+                                        contentDescription = "Share",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
                             }
                         }
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        // Tour Title Overlay at bottom of image
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(16.dp)
+                        ) {
                             Surface(
-                                modifier = Modifier.size(40.dp),
-                                shape = CircleShape,
-                                color = Color.Black.copy(alpha = 0.4f)
+                                shape = RoundedCornerShape(6.dp),
+                                color = PrimaryGreen,
+                                modifier = Modifier.padding(bottom = 8.dp)
                             ) {
-                                IconButton(onClick = { }) {
-                                    Icon(
-                                        Icons.Default.Share,
-                                        contentDescription = "Share",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
+                                Text(
+                                    text = detail.badge ?: "Khám phá",
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
                             }
-                            Surface(
-                                modifier = Modifier.size(40.dp),
-                                shape = CircleShape,
-                                color = Color.Black.copy(alpha = 0.4f)
-                            ) {
-                                IconButton(onClick = { }) {
-                                    Icon(
-                                        Icons.Default.FavoriteBorder,
-                                        contentDescription = "Favorite",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
+                            Text(
+                                text = detail.title,
+                                color = Color.White,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
-            }
 
-            // ── Sticky Horizontal Tab Bar (Sidebar equivalent in Compose) ──
-            stickyHeader {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color.White,
-                    shadowElevation = 4.dp
-                ) {
+                // ── Sticky Tab Bar ──
+                item {
                     ScrollableTabRow(
                         selectedTabIndex = selectedTab,
                         containerColor = Color.White,
@@ -165,7 +263,7 @@ fun TourDetailScreen(
                             )
                         },
                         divider = {
-                            HorizontalDivider(color = Color(0xFFF0F0F0))
+                            HorizontalDivider(color = Color(0xFFEEEEEE))
                         }
                     ) {
                         tabList.forEachIndexed { index, title ->
@@ -185,469 +283,396 @@ fun TourDetailScreen(
                         }
                     }
                 }
-            }
 
-            // ── Content Area based on Selected Tab ──
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 20.dp)
-                ) {
-                    when (selectedTab) {
-                        0 -> {
-                            // ── TAB 0: CÁC LỰA CHỌN GÓI ──
-                            Text(
-                                "Các lựa chọn gói",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = DarkTextColor
-                            )
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            // Date selectors row
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                DateItem(
-                                    month = "tháng 5", day = "28", weekday = "T5", label = "Hôm nay",
-                                    isSelected = selectedDateIndex == 0,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = { selectedDateIndex = 0 }
+                // ── Tab Content ──
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
+                    ) {
+                        when (selectedTab) {
+                            0 -> {
+                                // ── TAB 0: CÁC LỰA CHỌN GÓI ──
+                                Text(
+                                    "Các lựa chọn gói",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = DarkTextColor
                                 )
-                                DateItem(
-                                    month = "tháng 5", day = "29", weekday = "T6", label = "Ngày mai",
-                                    isSelected = selectedDateIndex == 1,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = { selectedDateIndex = 1 }
-                                )
-                                DateItem(
-                                    month = "tháng 5", day = "30", weekday = "T7", label = null,
-                                    isSelected = selectedDateIndex == 2,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = { selectedDateIndex = 2 }
-                                )
-                                // More option
-                                Surface(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(76.dp)
-                                        .clickable { },
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                                    color = Color.White
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center,
-                                        modifier = Modifier.padding(4.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.CalendarToday,
-                                            null,
-                                            tint = SecondaryTextColor,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            "Thêm ngày",
-                                            fontSize = 10.sp,
-                                            color = SecondaryTextColor,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
+                                Spacer(modifier = Modifier.height(14.dp))
 
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // Package details card
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White)
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
+                                // Date selectors row (sessions)
+                                if (detail.sessions.isNullOrEmpty()) {
+                                    Text("Hiện không có lịch khởi hành cho tour này.", color = SecondaryTextColor, fontSize = 14.sp)
+                                } else {
+                                    Text("Chọn ngày khởi hành:", color = SecondaryTextColor, fontSize = 12.sp)
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.Top
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Text(
-                                            "Tour Riêng Khám Phá Địa Đạo\nCủ Chi Từ TP. Hồ Chí Minh\n(Phú Mỹ), Việt Nam",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 15.sp,
-                                            color = DarkTextColor,
-                                            lineHeight = 20.sp,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.clickable { }
-                                        ) {
-                                            Text(
-                                                "Chi tiết",
-                                                color = PrimaryGreen,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 12.sp
-                                            )
-                                            Icon(
-                                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                                null,
-                                                tint = PrimaryGreen,
-                                                modifier = Modifier.size(16.dp)
+                                        detail.sessions!!.take(3).forEachIndexed { idx, session ->
+                                            val (month, day, weekday) = parseDateToParts(session.startDate)
+                                            val label = if (idx == 0) "Sớm nhất" else null
+                                            DateItem(
+                                                month = month, day = day, weekday = weekday, label = label,
+                                                isSelected = selectedDateIndex == idx,
+                                                modifier = Modifier.weight(1f),
+                                                onClick = { selectedDateIndex = idx }
                                             )
                                         }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(14.dp))
-
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            Icons.Default.Info,
-                                            null,
-                                            tint = SecondaryTextColor,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            "Không sẵn có trên ngày này",
-                                            color = SecondaryTextColor,
-                                            fontSize = 13.sp
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.height(14.dp))
-
-                                    Button(
-                                        onClick = { },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(48.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color.Transparent
-                                        ),
-                                        border = BorderStroke(1.dp, PrimaryGreen)
-                                    ) {
-                                        Text(
-                                            "Xem các ngày khác",
-                                            color = PrimaryGreen,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        // Calendar option
+                                        Surface(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(76.dp)
+                                                .clickable { },
+                                            shape = RoundedCornerShape(12.dp),
+                                            border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                                            color = Color.White
+                                        ) {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.Center,
+                                                modifier = Modifier.padding(4.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.CalendarToday,
+                                                    null,
+                                                    tint = SecondaryTextColor,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    "Thêm ngày",
+                                                    fontSize = 10.sp,
+                                                    color = SecondaryTextColor,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
                                     }
                                 }
+
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                // Guest counters
+                                Text(
+                                    "Số lượng hành khách",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = DarkTextColor
+                                )
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                GuestCounterRow(
+                                    type = "Người lớn",
+                                    ageRange = "Từ 12 tuổi trở lên",
+                                    priceLabel = String.format("%,dđ / người", adultPrice),
+                                    count = adultCount,
+                                    onIncrement = { adultCount++ },
+                                    onDecrement = { if (adultCount > 1) adultCount-- }
+                                )
+
+                                Spacer(modifier = Modifier.height(16.dp))
+                                HorizontalDivider(color = Color(0xFFF0F0F0))
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                GuestCounterRow(
+                                    type = "Trẻ em",
+                                    ageRange = "Từ 2 đến 11 tuổi",
+                                    priceLabel = String.format("%,dđ / người", childPrice),
+                                    count = childCount,
+                                    onIncrement = { childCount++ },
+                                    onDecrement = { if (childCount > 0) childCount-- }
+                                )
                             }
 
-                            Spacer(modifier = Modifier.height(24.dp))
-
-                            // ── Redesigned Guest Selection replaces activities ──
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                                colors = CardDefaults.cardColors(containerColor = Color.White)
-                            ) {
-                                Column(modifier = Modifier.padding(20.dp)) {
+                            1 -> {
+                                // ── TAB 1: THÔNG TIN CHUYẾN ĐI ──
+                                Text(
+                                    detail.title,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = DarkTextColor
+                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.LocationOn,
+                                        null,
+                                        tint = PrimaryGreen,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        "Số lượng khách",
+                                        detail.destinationCity ?: "Thái Lan",
+                                        color = SecondaryTextColor,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                                Text(
+                                    String.format("%,.0fđ / người", detail.basePrice),
+                                    color = PrimaryGreen,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    modifier = Modifier.padding(bottom = 12.dp)
+                                )
+                                Text(
+                                    detail.description ?: "Trải nghiệm trọn vẹn vẻ đẹp Thái Lan cùng FlourishTravel.",
+                                    color = SecondaryTextColor,
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp
+                                )
+
+                                if (!detail.highlights.isNullOrEmpty()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    Text(
+                                        "Điểm nổi bật",
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 18.sp,
+                                        fontSize = 16.sp,
                                         color = DarkTextColor
                                     )
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    detail.highlights!!.forEach { highlight ->
+                                        HighlightBulletItem(highlight)
+                                    }
+                                }
 
-                                    // Guest option: Adults
-                                    GuestCounterRow(
-                                        type = "Người lớn",
-                                        ageRange = "Từ 12 tuổi trở lên",
-                                        priceLabel = "2,500,000đ / khách",
-                                        count = adultCount,
-                                        onIncrement = { adultCount++ },
-                                        onDecrement = { if (adultCount > 0) adultCount-- }
+                                if (!detail.itineraries.isNullOrEmpty()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    Text(
+                                        "Lịch trình",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = DarkTextColor
                                     )
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    detail.itineraries!!.sortedBy { it.dayNumber }.forEachIndexed { idx, itinerary ->
+                                        ItineraryTimelineItem(
+                                            day = itinerary.dayNumber,
+                                            title = itinerary.title,
+                                            desc = itinerary.description ?: itinerary.summary ?: "",
+                                            isLast = idx == detail.itineraries!!.size - 1
+                                        )
+                                    }
+                                }
 
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(vertical = 16.dp),
-                                        color = Color(0xFFF2F2F2)
+                                if (!detail.includes.isNullOrEmpty()) {
+                                    Spacer(modifier = Modifier.height(24.dp))
+                                    Text(
+                                        "Dịch vụ bao gồm",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = DarkTextColor
                                     )
-
-                                    // Guest option: Children
-                                    GuestCounterRow(
-                                        type = "Trẻ em",
-                                        ageRange = "Từ 2 - 11 tuổi",
-                                        priceLabel = "1,250,000đ / khách",
-                                        count = childCount,
-                                        onIncrement = { childCount++ },
-                                        onDecrement = { if (childCount > 0) childCount-- }
-                                    )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    detail.includes!!.forEach { inc ->
+                                        val icon = when {
+                                            inc.lowercase().contains("bay") || inc.lowercase().contains("vé máy") -> Icons.Default.Flight
+                                            inc.lowercase().contains("khách sạn") || inc.lowercase().contains("ở") -> Icons.Default.Hotel
+                                            inc.lowercase().contains("ăn") || inc.lowercase().contains("uống") -> Icons.Default.Restaurant
+                                            inc.lowercase().contains("hdv") || inc.lowercase().contains("hướng dẫn") -> Icons.Default.SupportAgent
+                                            else -> Icons.Default.Security
+                                        }
+                                        InclusionItem(icon, inc)
+                                    }
                                 }
                             }
-                        }
 
-                        1 -> {
-                            // ── TAB 1: THÔNG TIN SẢN PHẨM ──
-                            Text(
-                                "Tour Khám Phá Thái Lan 5N4Đ",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp,
-                                color = DarkTextColor
-                            )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.LocationOn,
-                                    null,
-                                    tint = PrimaryGreen,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
+                            2 -> {
+                                // ── TAB 2: THÔNG TIN THÊM ──
                                 Text(
-                                    "Bangkok – Chiang Mai – Phuket",
+                                    "Thông tin cần biết",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = DarkTextColor
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    "• Quý khách vui lòng mang theo trang phục lịch sự khi ghé thăm các ngôi đền chùa tâm linh tại Thái Lan (áo có tay, quần dài hoặc váy dài quá đầu gối).\n\n" +
+                                            "• Nên chuẩn bị sẵn kem chống nắng, mũ nón và kính râm cho các hoạt động tham quan ngoài trời cũng như tắm biển tại Phuket.\n\n" +
+                                            "• Tiền tệ khuyên dùng: Baht Thái (THB). Bạn nên đổi trước một ít tiền mặt tại Việt Nam hoặc mang theo thẻ tín dụng quốc tế Visa/Mastercard.",
                                     color = SecondaryTextColor,
-                                    fontSize = 13.sp
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp
                                 )
                             }
-                            Text(
-                                "4.500.000đ / người",
-                                color = PrimaryGreen,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            )
-                            Text(
-                                "Hành trình 5 ngày 4 đêm khám phá vẻ đẹp huyền bí của các ngôi chùa tại Bangkok, tận hưởng không khí trong lành tại Chiang Mai và đắm mình trong làn nước xanh biếc của Phuket.",
-                                color = SecondaryTextColor,
-                                fontSize = 14.sp,
-                                lineHeight = 20.sp
-                            )
 
-                            Spacer(modifier = Modifier.height(24.dp))
+                            3 -> {
+                                // ── TAB 3: CHÍNH SÁCH HỦY ──
+                                Text(
+                                    "Chính sách hủy đặt tour",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = DarkTextColor
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    "• Hủy miễn phí tối đa 48 giờ trước khi lịch trình diễn ra: Hoàn tiền 100% số tiền đã đặt.\n\n" +
+                                            "• Hủy từ 24 - 48 giờ trước giờ đi: Hoàn tiền 50% tổng chi phí.\n\n" +
+                                            "• Hủy dưới 24 giờ hoặc không có mặt (No-show): Không hoàn tiền trong bất kỳ trường hợp nào.",
+                                    color = SecondaryTextColor,
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp
+                                )
+                            }
 
-                            Text(
-                                "Điểm nổi bật",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = DarkTextColor
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            HighlightBulletItem("Cung điện & Chùa Vàng")
-                            HighlightBulletItem("Ẩm thực đường phố")
-                            HighlightBulletItem("Biển Phuket")
-                            HighlightBulletItem("Chợ đêm & Nightlife")
-                            HighlightBulletItem("Trải nghiệm voi Chiang Mai")
-
-                            Spacer(modifier = Modifier.height(24.dp))
-
-                            Text(
-                                "Lịch trình",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = DarkTextColor
-                            )
-                            Spacer(modifier = Modifier.height(14.dp))
-                            ItineraryTimelineItem(
-                                day = 1,
-                                title = "Đến Bangkok & Dạo thuyền sông Chao Phraya",
-                                desc = "Nhận phòng khách sạn, thưởng thức ẩm thực địa phương và ngắm cảnh sông về đêm."
-                            )
-                            ItineraryTimelineItem(
-                                day = 2,
-                                title = "Khám phá Chùa Vàng & Cung điện Hoàng gia",
-                                desc = "Tham quan Wat Phra Kaew và Wat Arun, sau đó bay đến Chiang Mai."
-                            )
-                            ItineraryTimelineItem(
-                                day = 3,
-                                title = "Chiang Mai - Trải nghiệm văn hóa & Thiên nhiên",
-                                desc = "Thăm làng voi nhân đạo và lên đỉnh Doi Suthep ngắm toàn cảnh thành phố."
-                            )
-                            ItineraryTimelineItem(
-                                day = 4,
-                                title = "Phuket - Đảo Phi Phi & Lặn ngắm san hô",
-                                desc = "Trọn vẹn một ngày lênh đênh trên biển xanh và thư giãn tại bãi cát trắng."
-                            )
-                            ItineraryTimelineItem(
-                                day = 5,
-                                title = "Tạm biệt Thái Lan",
-                                desc = "Mua sắm đặc sản tại chợ địa phương và làm thủ tục bay về Việt Nam.",
-                                isLast = true
-                            )
-
-                            Spacer(modifier = Modifier.height(24.dp))
-
-                            Text(
-                                "Dịch vụ bao gồm",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = DarkTextColor
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            InclusionItem(Icons.Default.Flight, "Vé máy bay khứ hồi")
-                            InclusionItem(Icons.Default.Hotel, "Khách sạn 4 sao")
-                            InclusionItem(Icons.Default.Restaurant, "Bữa ăn theo chương trình")
-                            InclusionItem(Icons.Default.SupportAgent, "HDV tiếng Việt")
-                            InclusionItem(Icons.Default.Security, "Bảo hiểm du lịch")
-                        }
-
-                        2 -> {
-                            // ── TAB 2: THÔNG TIN THÊM ──
-                            Text(
-                                "Thông tin thêm",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = DarkTextColor
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                "• Quý khách vui lòng mang theo trang phục lịch sự khi ghé thăm các ngôi đền chùa tâm linh tại Thái Lan (áo có tay, quần dài hoặc váy dài quá đầu gối).\n\n" +
-                                        "• Nên chuẩn bị sẵn kem chống nắng, mũ nón và kính râm cho các hoạt động tham quan ngoài trời cũng như tắm biển tại Phuket.\n\n" +
-                                        "• Tiền tệ khuyên dùng: Baht Thái (THB). Bạn nên đổi trước một ít tiền mặt tại Việt Nam hoặc mang theo thẻ tín dụng quốc tế Visa/Mastercard.",
-                                color = SecondaryTextColor,
-                                fontSize = 14.sp,
-                                lineHeight = 20.sp
-                            )
-                        }
-
-                        3 -> {
-                            // ── TAB 3: CHÍNH SÁCH HỦY ──
-                            Text(
-                                "Chính sách hủy",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = DarkTextColor
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                "• Hủy miễn phí tối đa 48 giờ trước khi lịch trình diễn ra: Hoàn tiền 100% số tiền đã đặt.\n\n" +
-                                        "• Hủy từ 24 - 48 giờ trước giờ đi: Hoàn tiền 50% tổng chi phí.\n\n" +
-                                        "• Hủy dưới 24 giờ hoặc không có mặt (No-show): Không hoàn tiền trong bất kỳ trường hợp nào.",
-                                color = SecondaryTextColor,
-                                fontSize = 14.sp,
-                                lineHeight = 20.sp
-                            )
-                        }
-
-                        4 -> {
-                            // ── TAB 4: CÂU HỎI THƯỜNG GẶP ──
-                            Text(
-                                "Câu hỏi thường gặp",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = DarkTextColor
-                            )
-                            Spacer(modifier = Modifier.height(14.dp))
-                            FAQItem(
-                                q = "Tour có bao gồm xe đưa đón tại sân bay không?",
-                                a = "Có, toàn bộ lịch trình tour trọn gói đã bao gồm xe đưa đón 2 chiều tại sân bay bên Thái Lan."
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            FAQItem(
-                                q = "Trẻ em dưới 2 tuổi có được miễn phí không?",
-                                a = "Trẻ em dưới 2 tuổi sẽ được miễn phí hoàn toàn dịch vụ land tour, chỉ tính phụ thu vé máy bay theo quy định của hãng."
-                            )
+                            4 -> {
+                                // ── TAB 4: ĐÁNH GIÁ (REVIEWS) ──
+                                Text(
+                                    "Đánh giá từ khách hàng",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = DarkTextColor
+                                )
+                                Spacer(modifier = Modifier.height(14.dp))
+                                if (detail.reviews.isNullOrEmpty()) {
+                                    Text("Chưa có đánh giá nào cho tour này.", color = SecondaryTextColor, fontSize = 14.sp)
+                                } else {
+                                    detail.reviews!!.forEach { review ->
+                                        FAQItem(
+                                            q = "${review.authorName} • ★ ${review.rating}",
+                                            a = review.comment ?: "Đánh giá tốt."
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // ── Pinned Bottom Bar ──
-        Surface(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            color = Color.White,
-            shadowElevation = 16.dp
-        ) {
-            Column {
-                // FLOURISH promo text
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFE8F5E9))
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.CardGiftcard,
-                            null,
-                            tint = PrimaryGreen,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            "Dùng FLOURISH để tiết kiệm 50.000 đ",
-                            color = PrimaryGreen,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            "Tổng",
-                            color = SecondaryTextColor,
-                            fontSize = 12.sp
-                        )
-                        Text(
-                            text = String.format("%,dđ", displayPrice),
-                            color = Color(0xFFFF5722),
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
+            // ── Pinned Bottom Bar ──
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+                color = Color.White,
+                shadowElevation = 16.dp
+            ) {
+                Column {
+                    // FLOURISH promo text
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFE8F5E9))
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.CardGiftcard,
+                                null,
+                                tint = PrimaryGreen,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "Dùng FLOURISH để tiết kiệm 50.000 đ",
+                                color = PrimaryGreen,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Heart button
-                        Surface(
-                            modifier = Modifier.size(48.dp),
-                            shape = CircleShape,
-                            border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                            color = Color.White
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.FavoriteBorder,
-                                    null,
-                                    tint = DarkTextColor,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
+                        Column {
+                            Text(
+                                "Tổng cộng",
+                                color = SecondaryTextColor,
+                                fontSize = 12.sp
+                            )
+                            Text(
+                                text = String.format("%,dđ", displayPrice),
+                                color = Color(0xFFFF5722),
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
                         }
 
-                        // Next step button
-                        Button(
-                            onClick = onBookNowClick,
-                            modifier = Modifier
-                                .width(180.dp)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = PrimaryGreen
-                            )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text(
-                                "Bước tiếp theo",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = Color.White
-                            )
+                            // Heart (Favorite) button
+                            IconButton(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        try {
+                                            if (isFavorited) {
+                                                val res = RetrofitClient.favoriteApiService.removeFavorite(tourId)
+                                                if (res.isSuccessful) {
+                                                    isFavorited = false
+                                                    Toast.makeText(context, "Đã xóa khỏi danh sách yêu thích", Toast.LENGTH_SHORT).show()
+                                                }
+                                            } else {
+                                                val res = RetrofitClient.favoriteApiService.addFavorite(FavoriteRequest(tourId))
+                                                if (res.isSuccessful) {
+                                                    isFavorited = true
+                                                    Toast.makeText(context, "Đã thêm vào danh sách yêu thích", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                            Toast.makeText(context, "Lỗi kết nối favorites", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+                            ) {
+                                Surface(
+                                    modifier = Modifier.size(48.dp),
+                                    shape = CircleShape,
+                                    border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                                    color = Color.White
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = if (isFavorited) Icons.Filled.Favorite else Icons.Default.FavoriteBorder,
+                                            null,
+                                            tint = if (isFavorited) Color.Red else DarkTextColor,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Next step button
+                            Button(
+                                onClick = {
+                                    val session = detail.sessions?.getOrNull(selectedDateIndex)
+                                    if (session != null) {
+                                        onBookNowClick(session.id)
+                                    } else {
+                                        Toast.makeText(context, "Vui lòng chọn ngày khởi hành hợp lệ", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier
+                                    .width(180.dp)
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = PrimaryGreen
+                                )
+                            ) {
+                                Text(
+                                    "Bước tiếp theo",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
                 }
@@ -757,164 +782,212 @@ fun GuestCounterRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Decrement button
-            Surface(
+            // Decrement
+            IconButton(
+                onClick = onDecrement,
                 modifier = Modifier
                     .size(32.dp)
-                    .clickable { onDecrement() },
-                shape = CircleShape,
-                border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                color = Color.White
+                    .border(1.dp, Color(0xFFE0E0E0), CircleShape)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Default.Remove,
-                        null,
-                        tint = DarkTextColor,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+                Icon(
+                    Icons.Default.Remove,
+                    null,
+                    tint = SecondaryTextColor,
+                    modifier = Modifier.size(16.dp)
+                )
             }
 
             Text(
-                text = count.toString(),
+                count.toString(),
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 color = DarkTextColor
             )
 
-            // Increment button
-            Surface(
+            // Increment
+            IconButton(
+                onClick = onIncrement,
                 modifier = Modifier
                     .size(32.dp)
-                    .clickable { onIncrement() },
-                shape = CircleShape,
-                color = PrimaryGreen
+                    .border(1.dp, Color(0xFFE0E0E0), CircleShape)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Default.Add,
-                        null,
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+                Icon(
+                    Icons.Default.Add,
+                    null,
+                    tint = PrimaryGreen,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }
 }
 
-// ── Highlight Bullet ──
+// ── Highlight Bullet Item ──
 @Composable
 fun HighlightBulletItem(text: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(vertical = 3.dp)
-    ) {
-        Icon(
-            Icons.Default.CheckCircle,
-            null,
-            tint = PrimaryGreen,
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text,
-            color = DarkTextColor,
-            fontSize = 14.sp
-        )
-    }
-}
-
-// ── Inclusion Item ──
-@Composable
-fun InclusionItem(icon: ImageVector, text: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(vertical = 4.dp)
     ) {
-        Icon(
-            icon,
-            null,
-            tint = PrimaryGreen,
-            modifier = Modifier.size(16.dp)
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .background(PrimaryGreen, CircleShape)
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(10.dp))
         Text(
             text,
-            color = DarkTextColor,
-            fontSize = 14.sp
-        )
-    }
-}
-
-// ── FAQ Item ──
-@Composable
-fun FAQItem(q: String, a: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color(0xFFF9F9F9), RoundedCornerShape(12.dp))
-            .padding(14.dp)
-    ) {
-        Text(
-            "Hỏi: $q",
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
-            color = DarkTextColor
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            "Đáp: $a",
             color = SecondaryTextColor,
-            fontSize = 13.sp,
-            lineHeight = 18.sp
+            fontSize = 14.sp
         )
     }
 }
 
 // ── Itinerary Timeline Item ──
 @Composable
-fun ItineraryTimelineItem(
-    day: Int,
-    title: String,
-    desc: String,
-    isLast: Boolean = false
-) {
+fun ItineraryTimelineItem(day: Int, title: String, desc: String, isLast: Boolean = false) {
     Row(modifier = Modifier.fillMaxWidth()) {
+        // Left timeline column
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(24.dp)
+            modifier = Modifier.width(36.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .background(PrimaryGreen, CircleShape)
-            )
+            Surface(
+                modifier = Modifier.size(24.dp),
+                shape = CircleShape,
+                color = PrimaryGreen
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        day.toString(),
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
             if (!isLast) {
                 Box(
                     modifier = Modifier
-                        .width(1.5.dp)
-                        .height(80.dp)
-                        .background(PrimaryGreen.copy(alpha = 0.4f))
+                        .width(2.dp)
+                        .height(60.dp)
+                        .background(LightGreenBackground)
                 )
             }
         }
+
         Spacer(modifier = Modifier.width(12.dp))
+
+        // Right details column
         Column(modifier = Modifier.padding(bottom = 20.dp)) {
             Text(
-                "Ngày $day: $title",
+                title,
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 color = DarkTextColor
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 desc,
                 color = SecondaryTextColor,
-                fontSize = 12.sp,
-                lineHeight = 16.sp
+                fontSize = 13.sp,
+                lineHeight = 18.sp
             )
         }
     }
+}
+
+// ── Inclusion / Exclusion Item ──
+@Composable
+fun InclusionItem(icon: ImageVector, text: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 6.dp)
+    ) {
+        Icon(
+            icon,
+            null,
+            tint = PrimaryGreen,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text,
+            color = SecondaryTextColor,
+            fontSize = 14.sp
+        )
+    }
+}
+
+// ── Review or FAQ Item ──
+@Composable
+fun FAQItem(q: String, a: String) {
+    var expanded by remember { mutableStateOf(false) }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
+        border = BorderStroke(1.dp, Color(0xFFF0F0F0))
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    q,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = DarkTextColor,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    null,
+                    tint = SecondaryTextColor,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            if (expanded) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    a,
+                    color = SecondaryTextColor,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
+            }
+        }
+    }
+}
+
+private fun parseDateToParts(dateStr: String): Triple<String, String, String> {
+    try {
+        val parser = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        val date = parser.parse(dateStr)
+        if (date != null) {
+            val monthFormatter = java.text.SimpleDateFormat("tháng M", java.util.Locale.getDefault())
+            val dayFormatter = java.text.SimpleDateFormat("dd", java.util.Locale.getDefault())
+            val weekdayFormatter = java.text.SimpleDateFormat("EEE", java.util.Locale.getDefault())
+            val rawWd = weekdayFormatter.format(date).uppercase()
+            // Map common weekdays to Vietnamese abbreviations
+            val wd = when {
+                rawWd.contains("MON") || rawWd.contains("HAI") -> "T2"
+                rawWd.contains("TUE") || rawWd.contains("BA") -> "T3"
+                rawWd.contains("WED") || rawWd.contains("TƯ") -> "T4"
+                rawWd.contains("THU") || rawWd.contains("NĂM") -> "T5"
+                rawWd.contains("FRI") || rawWd.contains("SÁU") -> "T6"
+                rawWd.contains("SAT") || rawWd.contains("BẢY") -> "T7"
+                rawWd.contains("SUN") || rawWd.contains("NHẬT") -> "CN"
+                else -> rawWd
+            }
+            return Triple(monthFormatter.format(date), dayFormatter.format(date), wd)
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    return Triple("tháng 5", "28", "T5")
 }

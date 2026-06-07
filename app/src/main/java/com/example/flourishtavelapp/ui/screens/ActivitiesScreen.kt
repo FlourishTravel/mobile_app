@@ -1,5 +1,6 @@
 package com.example.flourishtavelapp.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -61,6 +62,9 @@ fun ActivitiesScreen(
     onActivityClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler {
+        onBack()
+    }
     // Basic Category List
     val defaultCategories = remember {
         mutableStateListOf(
