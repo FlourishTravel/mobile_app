@@ -1,5 +1,6 @@
 package com.example.flourishtavelapp.data.api
 
+import com.example.flourishtavelapp.BuildConfig
 import com.example.flourishtavelapp.data.session.SessionManager
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -9,9 +10,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    // Đối với Android Emulator, 10.0.2.2 tương ứng với localhost của máy tính vật lý.
-    // Nếu chạy trên thiết bị thật, hãy sửa thành IP máy tính vật lý của bạn (ví dụ: "http://192.168.1.15:8080/api/")
-    var BASE_URL = "http://10.0.2.2:8080/api/"
+    // BASE_URL is read dynamically from the root .env file at compile-time.
+    var BASE_URL = BuildConfig.BASE_URL
 
     private var sessionManager: SessionManager? = null
 

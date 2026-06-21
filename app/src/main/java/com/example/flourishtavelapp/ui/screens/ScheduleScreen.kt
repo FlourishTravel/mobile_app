@@ -1,5 +1,14 @@
 package com.example.flourishtavelapp.ui.screens
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import com.example.flourishtavelapp.data.api.RetrofitClient
+import com.example.flourishtavelapp.data.model.BookingSummary
+import com.example.flourishtavelapp.data.model.Tour
+import com.example.flourishtavelapp.data.model.FavoriteRequest
+import kotlinx.coroutines.launch
+import com.example.flourishtavelapp.R
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -229,17 +238,14 @@ fun ScheduleScreen(
     onBack: () -> Unit,
     onProfileClick: () -> Unit
 ) {
-    // Current state for which booked tour is selected to view details
     var selectedBookedTourForDetail by remember { mutableStateOf<TourItem?>(null) }
 
     if (selectedBookedTourForDetail != null) {
-        // Detailed Day-by-Day Accordion Itinerary View matching TourDetailScreen layout
         DetailedItineraryScreen(
             tour = selectedBookedTourForDetail!!,
             onBack = { selectedBookedTourForDetail = null }
         )
     } else {
-        // Main list screen (original redesign code)
         TripsMainListScreen(
             modifier = modifier,
             onBack = onBack,
@@ -248,7 +254,6 @@ fun ScheduleScreen(
         )
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripsMainListScreen(
@@ -257,124 +262,132 @@ fun TripsMainListScreen(
     onProfileClick: () -> Unit,
     onViewItinerary: (TourItem) -> Unit
 ) {
-    // Local list state to allow dynamic saving/unsaving interactions
-    var tourListState by remember {
-        mutableStateOf(
-            listOf(
-                TourItem(
-                    id = "1",
-                    title = "Vé Suối Nước Nóng Minera Bình Châu",
-                    rating = 4.5,
-                    reviewCount = 2,
-                    bookingCountText = "80+ người đã đặt",
-                    location = "Hồ Chí Minh",
-                    originalPrice = "120.063,00 đ",
-                    currentPrice = "106.496,00 đ",
-                    imageRes = com.example.flourishtavelapp.R.drawable.travel_bg,
-                    tags = listOf("Không hoàn tiền", "Xác nhận ngay lập tức"),
-                    isSaved = true,
-                    isBooked = false
-                ),
-                TourItem(
-                    id = "2",
-                    title = "Tour Ngắm Hoàng Hôn Trên Sông Chao Phraya",
-                    rating = 4.8,
-                    reviewCount = 12,
-                    bookingCountText = "500+ người đã đặt",
-                    location = "Bangkok",
-                    originalPrice = "450.000,00 đ",
-                    currentPrice = "399.000,00 đ",
-                    imageRes = com.example.flourishtavelapp.R.drawable.chaoriver_bg,
-                    tags = listOf("Hủy miễn phí", "Xác nhận ngay lập tức"),
-                    isSaved = true,
-                    isBooked = false
-                ),
-                TourItem(
-                    id = "3",
-                    title = "Vé Vào Cổng Đền Wat Arun Bangkok",
-                    rating = 4.7,
-                    reviewCount = 45,
-                    bookingCountText = "1K+ người đã đặt",
-                    location = "Bangkok",
-                    originalPrice = "150.000,00 đ",
-                    currentPrice = "120.000,00 đ",
-                    imageRes = com.example.flourishtavelapp.R.drawable.awat_bg,
-                    tags = listOf("Không hoàn tiền", "Vé điện tử"),
-                    isSaved = true,
-                    isBooked = false
-                ),
-                TourItem(
-                    id = "4",
-                    title = "Tour Trọn Gói Khám Phá Thái Lan 5N4Đ",
-                    rating = 4.9,
-                    reviewCount = 156,
-                    bookingCountText = "Đang diễn ra",
-                    location = "Bangkok",
-                    originalPrice = "5.200.000,00 đ",
-                    currentPrice = "4.500.000,00 đ",
-                    imageRes = com.example.flourishtavelapp.R.drawable.thailan,
-                    tags = listOf("Đã xác nhận", "HDV Tiếng Việt"),
-                    isSaved = false,
-                    isBooked = true,
-                    bookingDate = "Khởi hành: 28/05/2026"
-                ),
-                TourItem(
-                    id = "5",
-                    title = "Vé Lặn Biển Ngắm San Hô Tại Đảo Phi Phi",
-                    rating = 4.6,
-                    reviewCount = 32,
-                    bookingCountText = "Đã hoàn thành",
-                    location = "Phuket",
-                    originalPrice = "1.800.000,00 đ",
-                    currentPrice = "1.650.000,00 đ",
-                    imageRes = com.example.flourishtavelapp.R.drawable.phiphi_bg,
-                    tags = listOf("Đã hoàn thành", "Bao gồm ăn trưa"),
-                    isSaved = false,
-                    isBooked = true,
-                    bookingDate = "Khởi hành: 25/05/2026"
-                )
-            )
-        )
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    var bookingsList by remember { mutableStateOf<List<BookingSummary>>(emptyList()) }
+    var favoritesList by remember { mutableStateOf<List<Tour>>(emptyList()) }
+    var isLoadingBookings by remember { mutableStateOf(true) }
+    var isLoadingFavorites by remember { mutableStateOf(true) }
+
+    fun refreshBookings() {
+        isLoadingBookings = true
+        coroutineScope.launch {
+            try {
+                val response = RetrofitClient.bookingApiService.getMyBookings()
+                if (response.isSuccessful) {
+                    bookingsList = response.body()?.data ?: emptyList()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                isLoadingBookings = false
+            }
+        }
+    }
+
+    fun refreshFavorites() {
+        isLoadingFavorites = true
+        coroutineScope.launch {
+            try {
+                val response = RetrofitClient.favoriteApiService.getFavorites()
+                if (response.isSuccessful) {
+                    favoritesList = response.body()?.data ?: emptyList()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                isLoadingFavorites = false
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        refreshBookings()
+        refreshFavorites()
     }
 
     var selectedTabIndex by remember { mutableIntStateOf(0) } // 0: Tour của bạn, 1: Đã lưu
     var selectedCityFilter by remember { mutableStateOf("Mọi thành phố") }
 
-    // Toggle save status
     val onToggleSave: (String) -> Unit = { id ->
-        tourListState = tourListState.map { tour ->
-            if (tour.id == id) {
-                tour.copy(isSaved = !tour.isSaved)
-            } else {
-                tour
+        coroutineScope.launch {
+            try {
+                val isSaved = favoritesList.any { it.id == id }
+                if (isSaved) {
+                    val response = RetrofitClient.favoriteApiService.removeFavorite(id)
+                    if (response.isSuccessful) {
+                        Toast.makeText(context, "Đã xóa khỏi mục đã lưu", Toast.LENGTH_SHORT).show()
+                        refreshFavorites()
+                    }
+                } else {
+                    val response = RetrofitClient.favoriteApiService.addFavorite(FavoriteRequest(id))
+                    if (response.isSuccessful) {
+                        Toast.makeText(context, "Đã lưu tour", Toast.LENGTH_SHORT).show()
+                        refreshFavorites()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
-    // Filtered lists based on active tab
-    val toursForTab = if (selectedTabIndex == 0) {
-        tourListState.filter { it.isBooked }
-    } else {
-        tourListState.filter { it.isSaved }
+    val bookedTourItems = bookingsList.map { booking ->
+        TourItem(
+            id = booking.id,
+            title = booking.tourName ?: "Tour của bạn",
+            rating = 4.8,
+            reviewCount = 12,
+            bookingCountText = when (booking.status.uppercase()) {
+                "PENDING" -> "Chờ thanh toán"
+                "CONFIRMED" -> "Đã xác nhận"
+                "CANCELLED" -> "Đã hủy"
+                else -> booking.status
+            },
+            location = "Thái Lan",
+            originalPrice = String.format("%,dđ", (booking.totalAmount ?: 0) + 100000),
+            currentPrice = String.format("%,dđ", booking.totalAmount ?: 0),
+            imageRes = if (booking.tourName?.contains("Phi Phi") == true) R.drawable.phiphi_bg else R.drawable.awat_bg,
+            tags = listOf(booking.status, "Vé điện tử"),
+            isSaved = false,
+            isBooked = true,
+            bookingDate = "Khởi hành: " + (booking.createdAt?.take(10) ?: "Hôm nay")
+        )
     }
 
-    // Filtered lists based on city chip
+    val savedTourItems = favoritesList.map { tour ->
+        TourItem(
+            id = tour.id,
+            title = tour.title,
+            rating = tour.rating ?: 4.7,
+            reviewCount = 35,
+            bookingCountText = "Khám phá",
+            location = tour.destinationCity ?: "Thái Lan",
+            originalPrice = String.format("%,.0fđ", tour.basePrice + 200000),
+            currentPrice = String.format("%,.0fđ", tour.basePrice),
+            imageRes = if (tour.title.contains("Phi Phi")) R.drawable.phiphi_bg else R.drawable.awat_bg,
+            tags = listOf(tour.badge ?: "Đã lưu", "Vé điện tử"),
+            isSaved = true,
+            isBooked = false
+        )
+    }
+
+    val toursForTab = if (selectedTabIndex == 0) bookedTourItems else savedTourItems
+
     val filteredTours = if (selectedCityFilter == "Mọi thành phố") {
         toursForTab
     } else {
         toursForTab.filter { it.location == selectedCityFilter }
     }
 
-    // Dynamically calculate counts for tabs
-    val bookedCount = tourListState.count { it.isBooked }
-    val savedCount = tourListState.count { it.isSaved }
+    val bookedCount = bookedTourItems.size
+    val savedCount = savedTourItems.size
 
-    // List of cities based on active tab tours for chips
     val availableCities = remember(toursForTab) {
         listOf("Mọi thành phố") + toursForTab.map { it.location }.distinct()
     }
 
-    // Ensure selected filter is reset if it's no longer available in the tab's cities
     LaunchedEffect(selectedTabIndex) {
         selectedCityFilter = "Mọi thành phố"
     }
@@ -382,13 +395,11 @@ fun TripsMainListScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFFAFAFA)) // Clean off-white background
+            .background(Color(0xFFFAFAFA))
     ) {
-        // --- Top Custom Header matching reference image ---
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color.White,
-            shadowElevation = 0.dp
+            color = Color.White
         ) {
             Column {
                 Row(
@@ -405,7 +416,6 @@ fun TripsMainListScreen(
                         )
                     }
 
-                    // Dynamically centered title based on tab selection
                     Text(
                         text = if (selectedTabIndex == 0) "Tour của bạn" else "Đã lưu",
                         fontWeight = FontWeight.ExtraBold,
@@ -415,7 +425,6 @@ fun TripsMainListScreen(
                         modifier = Modifier.weight(1f)
                     )
 
-                    // Profile Icon
                     Surface(
                         modifier = Modifier
                             .size(36.dp)
@@ -432,11 +441,10 @@ fun TripsMainListScreen(
                     }
                 }
 
-                // --- Custom TabRow matching reference photo ---
                 TabRow(
                     selectedTabIndex = selectedTabIndex,
                     containerColor = Color.White,
-                    contentColor = Color(0xFF1976D2), // Royal blue matching reference
+                    contentColor = Color(0xFF1976D2),
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
                             Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
@@ -476,277 +484,311 @@ fun TripsMainListScreen(
             }
         }
 
-        // --- LazyColumn for main content including chips and cards ---
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // --- Filter Chips Section ---
-            if (availableCities.size > 1) {
-                item {
-                    LazyRow(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(availableCities) { city ->
-                            val isSelected = selectedCityFilter == city
-                            val countInTab = if (city == "Mọi thành phố") {
-                                toursForTab.size
-                            } else {
-                                toursForTab.count { it.location == city }
-                            }
-                            
-                            val displayText = if (city == "Mọi thành phố") {
-                                "Mọi thành phố"
-                            } else {
-                                "$city ($countInTab)"
-                            }
+        if ((selectedTabIndex == 0 && isLoadingBookings) || (selectedTabIndex == 1 && isLoadingFavorites)) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFF1976D2))
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (availableCities.size > 1) {
+                    item {
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(availableCities) { city ->
+                                val isSelected = selectedCityFilter == city
+                                val countInTab = if (city == "Mọi thành phố") {
+                                    toursForTab.size
+                                } else {
+                                    toursForTab.count { it.location == city }
+                                }
+                                
+                                val displayText = if (city == "Mọi thành phố") {
+                                    "Mọi thành phố"
+                                } else {
+                                    "$city ($countInTab)"
+                                }
 
-                            Surface(
-                                modifier = Modifier.clickable { selectedCityFilter = city },
-                                shape = RoundedCornerShape(20.dp),
-                                border = BorderStroke(
-                                    width = 1.2.dp,
-                                    color = if (isSelected) Color(0xFF1976D2) else Color(0xFFCCCCCC)
-                                ),
-                                color = if (isSelected) Color(0xFFE3F2FD) else Color.White
-                            ) {
-                                Text(
-                                    text = displayText,
-                                    color = if (isSelected) Color(0xFF1976D2) else Color(0xFF444444),
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    fontSize = 13.sp,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                                )
+                                Surface(
+                                    modifier = Modifier.clickable { selectedCityFilter = city },
+                                    shape = RoundedCornerShape(20.dp),
+                                    border = BorderStroke(
+                                        width = 1.2.dp,
+                                        color = if (isSelected) Color(0xFF1976D2) else Color(0xFFCCCCCC)
+                                    ),
+                                    color = if (isSelected) Color(0xFFE3F2FD) else Color.White
+                                ) {
+                                    Text(
+                                        text = displayText,
+                                        color = if (isSelected) Color(0xFF1976D2) else Color(0xFF444444),
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 13.sp,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                    )
+                                }
                             }
                         }
                     }
+                } else {
+                    item { Spacer(modifier = Modifier.height(12.dp)) }
                 }
-            } else {
-                item { Spacer(modifier = Modifier.height(12.dp)) }
-            }
 
-            // --- Tour Cards List ---
-            if (filteredTours.isEmpty()) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 60.dp, horizontal = 32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = if (selectedTabIndex == 0) "Chưa có tour nào được đặt" else "Không có tour nào trong mục đã lưu",
-                            color = Color.Gray,
-                            fontSize = 14.sp,
-                            textAlign = TextAlign.Center
-                        )
+                if (filteredTours.isEmpty()) {
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 60.dp, horizontal = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (selectedTabIndex == 0) "Chưa có tour nào được đặt" else "Không có tour nào trong mục đã lưu",
+                                color = Color.Gray,
+                                fontSize = 14.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
-                }
-            } else {
-                items(filteredTours, key = { it.id }) { tour ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, Color(0xFFE5E5E5)),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                // Left rounded image
-                                Image(
-                                    painter = painterResource(id = tour.imageRes),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(105.dp)
-                                        .clip(RoundedCornerShape(12.dp)),
-                                    contentScale = ContentScale.Crop
-                                )
+                } else {
+                    items(filteredTours, key = { it.id }) { tour ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, Color(0xFFE5E5E5)),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = tour.imageRes),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(105.dp)
+                                            .clip(RoundedCornerShape(12.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
 
-                                // Right tour metadata
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.Top
-                                    ) {
-                                        Text(
-                                            text = tour.title,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 14.sp,
-                                            color = Color(0xFF1E272C),
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f).padding(end = 6.dp)
-                                        )
-
-                                        // Circular heart button
-                                        Surface(
-                                            modifier = Modifier
-                                                .size(34.dp)
-                                                .clickable { onToggleSave(tour.id) },
-                                            shape = CircleShape,
-                                            border = BorderStroke(1.dp, Color(0xFFF0F0F0)),
-                                            color = Color.White
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.Top
                                         ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Icon(
-                                                    imageVector = if (tour.isSaved) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                                    contentDescription = "Save",
-                                                    tint = if (tour.isSaved) Color.Red else Color.LightGray,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    // Star Rating
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Star,
-                                            contentDescription = "Rating Star",
-                                            tint = Color(0xFFFFB300),
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "${tour.rating} (${tour.reviewCount}) • ${tour.bookingCountText}",
-                                            color = Color(0xFF757575),
-                                            fontSize = 11.sp
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.height(2.dp))
-
-                                    // Location Pin
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Filled.LocationOn,
-                                            contentDescription = "Location Pin",
-                                            tint = Color(0xFF9E9E9E),
-                                            modifier = Modifier.size(13.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = tour.location,
-                                            color = Color(0xFF757575),
-                                            fontSize = 11.sp
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.height(6.dp))
-
-                                    // Tags (pastel backgrounds)
-                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        tour.tags.forEachIndexed { idx, tag ->
-                                            val (bgColor, textColor) = if (idx == 0) {
-                                                Color(0xFFF3E5F5) to Color(0xFF7B1FA2)
-                                            } else {
-                                                Color(0xFFE1F5FE) to Color(0xFF0288D1)
-                                            }
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = bgColor
-                                            ) {
-                                                Text(
-                                                    text = tag,
-                                                    color = textColor,
-                                                    fontSize = 10.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    // Prices
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalAlignment = Alignment.End
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
-                                                text = "Khởi điểm là ",
+                                                text = tour.title,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                color = Color(0xFF1E272C),
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f).padding(end = 6.dp)
+                                            )
+
+                                            Surface(
+                                                modifier = Modifier
+                                                    .size(34.dp)
+                                                    .clickable { onToggleSave(tour.id) },
+                                                shape = CircleShape,
+                                                border = BorderStroke(1.dp, Color(0xFFF0F0F0)),
+                                                color = Color.White
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = if (tour.isSaved) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                                        contentDescription = "Save",
+                                                        tint = if (tour.isSaved) Color.Red else Color.LightGray,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Star,
+                                                contentDescription = "Rating Star",
+                                                tint = Color(0xFFFFB300),
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "${tour.rating} (${tour.reviewCount}) • ${tour.bookingCountText}",
                                                 color = Color(0xFF757575),
                                                 fontSize = 11.sp
                                             )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(2.dp))
+
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Filled.LocationOn,
+                                                contentDescription = "Location Pin",
+                                                tint = Color(0xFF9E9E9E),
+                                                modifier = Modifier.size(13.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
                                             Text(
-                                                text = tour.originalPrice,
-                                                color = Color(0xFF9E9E9E),
-                                                fontSize = 11.sp,
-                                                textDecoration = TextDecoration.LineThrough
+                                                text = tour.location,
+                                                color = Color(0xFF757575),
+                                                fontSize = 11.sp
                                             )
                                         }
-                                        Text(
-                                            text = tour.currentPrice,
-                                            color = Color(0xFFD32F2F),
-                                            fontSize = 17.sp,
-                                            fontWeight = FontWeight.ExtraBold
-                                        )
+
+                                        Spacer(modifier = Modifier.height(6.dp))
+
+                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            tour.tags.forEachIndexed { idx, tag ->
+                                                val (bgColor, textColor) = if (idx == 0) {
+                                                    Color(0xFFF3E5F5) to Color(0xFF7B1FA2)
+                                                } else {
+                                                    Color(0xFFE1F5FE) to Color(0xFF0288D1)
+                                                }
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = bgColor
+                                                ) {
+                                                    Text(
+                                                        text = tag,
+                                                        color = textColor,
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalAlignment = Alignment.End
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = "Khởi điểm là ",
+                                                    color = Color(0xFF757575),
+                                                    fontSize = 11.sp
+                                                )
+                                                Text(
+                                                    text = tour.originalPrice,
+                                                    color = Color(0xFF9E9E9E),
+                                                    fontSize = 11.sp,
+                                                    textDecoration = TextDecoration.LineThrough
+                                                )
+                                            }
+                                            Text(
+                                                text = tour.currentPrice,
+                                                color = Color(0xFFD32F2F),
+                                                fontSize = 17.sp,
+                                                fontWeight = FontWeight.ExtraBold
+                                            )
+                                        }
                                     }
                                 }
-                            }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
 
-                            // Bottom wide outlined button - Now interactive for booked tours!
-                            val buttonText = if (selectedTabIndex == 0) "Xem vé điện tử & Quản lý" else "Xem mọi phương án"
-                            val buttonColor = if (selectedTabIndex == 0) Color(0xFF4CAF50) else Color(0xFF1976D2)
-                            OutlinedButton(
-                                onClick = {
-                                    if (selectedTabIndex == 0) {
-                                        onViewItinerary(tour)
+                                val buttonText = if (selectedTabIndex == 0) "Xem vé điện tử & Quản lý" else "Xem mọi phương án"
+                                val buttonColor = if (selectedTabIndex == 0) Color(0xFF4CAF50) else Color(0xFF1976D2)
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            if (selectedTabIndex == 0) {
+                                                onViewItinerary(tour)
+                                            }
+                                        },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(44.dp),
+                                        shape = RoundedCornerShape(22.dp),
+                                        border = BorderStroke(1.2.dp, buttonColor),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = buttonColor)
+                                    ) {
+                                        Text(
+                                            text = buttonText,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp
+                                        )
                                     }
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(44.dp),
-                                shape = RoundedCornerShape(22.dp),
-                                border = BorderStroke(1.2.dp, buttonColor),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = buttonColor)
-                            ) {
-                                Text(
-                                    text = buttonText,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
-                                )
+
+                                    // Cancel Booking Button for booked tours
+                                    if (selectedTabIndex == 0 && tour.tags.firstOrNull()?.uppercase() != "CANCELLED") {
+                                        Button(
+                                            onClick = {
+                                                coroutineScope.launch {
+                                                    try {
+                                                        val response = RetrofitClient.bookingApiService.cancelBooking(tour.id)
+                                                        if (response.isSuccessful) {
+                                                            Toast.makeText(context, "Hủy đặt tour thành công", Toast.LENGTH_SHORT).show()
+                                                            refreshBookings()
+                                                        } else {
+                                                            Toast.makeText(context, "Không thể hủy đặt tour", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        e.printStackTrace()
+                                                        Toast.makeText(context, "Lỗi kết nối", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier
+                                                .width(110.dp)
+                                                .height(44.dp),
+                                            shape = RoundedCornerShape(22.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                                        ) {
+                                            Text(
+                                                text = "Hủy",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                color = Color.White
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            // --- Footer matching image label ---
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                val footerText = if (selectedTabIndex == 0) {
-                    "Kết thúc danh sách tour đặt chỗ của quý khách"
-                } else {
-                    "Kết thúc danh sách đã lưu của quý khách"
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    val footerText = if (selectedTabIndex == 0) {
+                        "Kết thúc danh sách tour đặt chỗ của quý khách"
+                    } else {
+                        "Kết thúc danh sách đã lưu của quý khách"
+                    }
+                    Text(
+                        text = footerText,
+                        color = Color(0xFF9E9E9E),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 24.dp)
+                    )
                 }
-                Text(
-                    text = footerText,
-                    color = Color(0xFF9E9E9E),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 24.dp)
-                )
             }
         }
     }

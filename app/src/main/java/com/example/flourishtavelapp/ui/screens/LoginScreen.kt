@@ -23,6 +23,9 @@ import com.example.flourishtavelapp.data.model.LoginRequest
 import com.example.flourishtavelapp.data.session.SessionManager
 import com.example.flourishtavelapp.data.model.UserInfo
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
+import com.example.flourishtavelapp.R
 
 import androidx.activity.compose.BackHandler
 
@@ -78,35 +81,14 @@ fun LoginScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Sprouts/Leaf Logo inside a white circular badge with a green border
-            Surface(
-                modifier = Modifier.size(96.dp),
-                shape = CircleShape,
-                color = Color.White,
-                border = BorderStroke(2.dp, Color(0xFF81C784)), // Soft Green Border
-                shadowElevation = 2.dp
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "N",
-                            color = Color(0xFF388E3C),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Icon(
-                            imageVector = Icons.Default.Eco, // Leaf sprout
-                            contentDescription = "Logo sprout",
-                            tint = Color(0xFF4CAF50),
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                }
-            }
+            // Circular Logo image
+            Image(
+                painter = painterResource(id = R.drawable.logo_new),
+                contentDescription = "App Logo",
+                modifier = Modifier
+                    .size(96.dp)
+                    .clip(CircleShape)
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 

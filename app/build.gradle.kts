@@ -1,7 +1,19 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
+
+// Load .env properties
+val envFile = project.rootProject.file(".env")
+val env = Properties()
+if (envFile.exists()) {
+    envFile.inputStream().use {
+        env.load(it)
+    }
+}
+val apiUrl = env.getProperty("VITE_API_URL") ?: "https://khanhtn45.id.vn/api"
 
 android {
     namespace = "com.example.flourishtavelapp"
@@ -15,6 +27,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        buildConfigField("String", "BASE_URL", "\"$apiUrl/\"")
     }
 
     buildTypes {
@@ -32,6 +46,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
