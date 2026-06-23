@@ -1,9 +1,22 @@
 package com.example.flourishtavelapp.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,38 +25,143 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.ui.theme.*
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.flourishtavelapp.data.api.RetrofitClient
+import com.example.flourishtavelapp.data.model.ChatbotRequest
+import com.example.flourishtavelapp.data.model.ChatbotTourCard
+import com.example.flourishtavelapp.data.session.SessionManager
+import com.example.flourishtavelapp.ui.theme.DarkTextColor
+import com.example.flourishtavelapp.ui.theme.LightGreenBackground
+import com.example.flourishtavelapp.ui.theme.NatureGreenBackground
+import com.example.flourishtavelapp.ui.theme.PrimaryGreen
+import com.example.flourishtavelapp.ui.theme.SecondaryTextColor
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.UUID
 
-// Data class for Chat History (Mock)
-data class ChatMessage(val message: String, val time: String, val isUser: Boolean)
+private const val FLORA_AVATAR_ASSET = "file:///android_asset/assets/Flora-AI.png"
+private val FloraMessageIndent = 48.dp
 
+private data class FloraChatMessage(
+    val message: String,
+    val time: String,
+    val isUser: Boolean,
+    val tours: List<ChatbotTourCard> = emptyList()
+)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AssistantScreen(
-    modifier: Modifier = Modifier, 
+    modifier: Modifier = Modifier,
     onBack: () -> Unit,
     onProfileClick: () -> Unit
 ) {
-    // Chat States
-    val chatMessages = remember { mutableStateListOf<ChatMessage>() }
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val scope = rememberCoroutineScope()
+    val sessionId = remember { "mobile-${UUID.randomUUID()}" }
+
+    val chatMessages = remember {
+        mutableStateListOf(
+            FloraChatMessage(
+                message = "Chào bạn, Flora đây! Mình sẽ đồng hành cùng bạn để chuyến đi thuận tiện, vui vẻ và phù hợp với sở thích của bạn hơn nhé.",
+                time = "Flora • VỪA XONG",
+                isUser = false
+            )
+        )
+    }
     var inputText by remember { mutableStateOf("") }
+    var loading by remember { mutableStateOf(false) }
+    var lastState by remember { mutableStateOf<Map<String, Any>?>(null) }
+    var quickReplies by remember { mutableStateOf<List<String>>(emptyList()) }
     val scrollState = rememberScrollState()
 
-    // Auto-scroll to bottom when list changes
-    LaunchedEffect(chatMessages.size) {
-        if (chatMessages.isNotEmpty()) {
-            scrollState.animateScrollTo(scrollState.maxValue)
+    fun sendChat(text: String) {
+        if (text.isBlank() || loading) return
+        quickReplies = emptyList()
+        chatMessages.add(FloraChatMessage(text, "BẠN • BÂY GIỜ", true))
+        inputText = ""
+        loading = true
+        scope.launch {
+            try {
+                val user = sessionManager.getUserInfo()
+                val request = ChatbotRequest(
+                    content = text,
+                    sessionId = sessionId,
+                    userId = user?.id,
+                    state = lastState
+                )
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.chatbotApiService.sendMessage(request)
+                }
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    val chatData = body?.data
+                    if (body?.success == true && chatData != null) {
+                        lastState = chatData.state
+                        quickReplies = chatData.quickReplies?.mapNotNull { qr ->
+                            when {
+                                !qr.payload.isNullOrBlank() -> qr.payload
+                                qr.label.isNotBlank() -> qr.label
+                                else -> null
+                            }
+                        } ?: emptyList()
+                        chatMessages.add(
+                            FloraChatMessage(
+                                message = chatData.reply,
+                                time = "Flora • BÂY GIỜ",
+                                isUser = false,
+                                tours = chatData.tours ?: emptyList()
+                            )
+                        )
+                    } else {
+                        chatMessages.add(
+                            FloraChatMessage(body?.message ?: "Không nhận được phản hồi", "Flora", false)
+                        )
+                    }
+                } else {
+                    chatMessages.add(FloraChatMessage("Lỗi kết nối (${response.code()})", "Flora", false))
+                }
+            } catch (e: Exception) {
+                chatMessages.add(FloraChatMessage("Lỗi: ${e.message ?: "mạng"}", "Flora", false))
+            } finally {
+                loading = false
+            }
         }
+    }
+
+    LaunchedEffect(chatMessages.size, loading, quickReplies.size) {
+        scrollState.animateScrollTo(scrollState.maxValue)
     }
 
     Column(
@@ -51,7 +169,6 @@ fun AssistantScreen(
             .fillMaxSize()
             .background(NatureGreenBackground)
     ) {
-        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -61,11 +178,12 @@ fun AssistantScreen(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = DarkTextColor)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = DarkTextColor)
                 }
-                Spacer(modifier = Modifier.width(4.dp))
+                FloraAvatar(modifier = Modifier.size(36.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    "Trợ lý AI",
+                    text = "Flora AI",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = DarkTextColor
@@ -78,11 +196,15 @@ fun AssistantScreen(
                 shape = CircleShape,
                 color = PrimaryGreen
             ) {
-                Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.padding(8.dp))
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Profile",
+                    tint = Color.White,
+                    modifier = Modifier.padding(8.dp)
+                )
             }
         }
 
-        // Scrollable Chat Area
         Box(modifier = Modifier.weight(1f)) {
             Column(
                 modifier = Modifier
@@ -92,73 +214,45 @@ fun AssistantScreen(
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Pre-existing messages
-                AiChatBubble(
-                    message = "Chào bạn! Tôi là hướng dẫn viên Flourish của bạn. Bạn đã sẵn sàng khám phá những viên ngọc ẩn giấu quanh Kyoto hôm nay chưa? 🍵",
-                    time = "AI FL • VỪA XONG"
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                UserChatBubble(
-                    message = "Tôi đang tìm kiếm một nơi nào đó yên tĩnh. Có lẽ là một quán trà hoặc một địa điểm chụp ảnh đẹp mà không quá đông đúc.",
-                    time = "BẠN • 2 PHÚT TRƯỚC"
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Text(
-                    "Gợi ý cho tâm trạng của bạn",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkTextColor,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                RecommendationCard(
-                    title = "Phuket Thái Lan",
-                    description = "Điểm đến ưu tiên hàng đầu cho một mùa hè mát mẻ đó chính là đi Biển, đi hít hà \"Flourish\", nạp lại năng lượng sau một quãng thời gian dài chống dịch và bận rộn với công việc. Trong đó, du lịch Phuket (du lịch Thái Lan) trở thành lựa chọn đầu tiên cho những ai yêu thích biển xanh, cát trắng, nắng vàng... Để Flourish đề cử cho bạn vài bãi biển đẹp tại Phuket vừa tránh nóng, vừa du lịch nghỉ dưỡng nào!.",
-                    tag = "GẦN ĐÂY",
-                    tagColor = Color(0xFF00BFA5),
-                    imageResId = com.example.flourishtavelapp.R.drawable.phuket_bg
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                RecommendationCard(
-                    title = "Chùa Wat Rong Khun",
-                    description = "Wat Rong Khun (tiếng Thái: วัดร่องขุ่น), còn được gọi là Chùa Trắng, là một ngôi chùa Phật giáo và là một trong những ngôi chùa dễ nhận biết nhất ở Pa O Don Chai, huyện Mueang, Chiang Rai, Thái Lan.",
-                    tag = "ĐIỂM CHỤP ẢNH",
-                    tagColor = Color(0xFFFF8A80),
-                    imageResId = com.example.flourishtavelapp.R.drawable.awat_bg
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Render dynamic messages from list
-                chatMessages.forEach { msg ->
+                for (msg in chatMessages) {
                     if (msg.isUser) {
                         UserChatBubble(message = msg.message, time = msg.time)
                     } else {
                         AiChatBubble(message = msg.message, time = msg.time)
+                        for (tour in msg.tours) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Box(modifier = Modifier.padding(start = FloraMessageIndent)) {
+                                ChatbotTourCardItem(tour = tour)
+                            }
+                        }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                // Quick Actions (always at bottom of messages)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    QuickActionChip("VÂNG, LÀM ƠN")
-                    QuickActionChip("GIÁ BAO NHIÊU?")
+                if (loading) {
+                    AiChatBubble(message = "Đang suy nghĩ...", time = "Flora")
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                if (quickReplies.isNotEmpty()) {
+                    Box(modifier = Modifier.padding(start = FloraMessageIndent)) {
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            for (label in quickReplies.take(3)) {
+                                QuickActionChip(label = label, onClick = { sendChat(label) })
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
 
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
 
-        // Fixed Chat Input Bar
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
@@ -173,26 +267,25 @@ fun AssistantScreen(
                 OutlinedTextField(
                     value = inputText,
                     onValueChange = { inputText = it },
-                    placeholder = { Text("Hỏi trợ lý AI của bạn...", fontSize = 14.sp) },
+                    placeholder = {
+                        Text(
+                            text = "Hỏi Flora về tour, lịch trình hoặc gợi ý chuyến đi...",
+                            fontSize = 14.sp
+                        )
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = PrimaryGreen,
                         unfocusedBorderColor = Color.LightGray
                     ),
-                    maxLines = 3
+                    maxLines = 3,
+                    enabled = !loading
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 IconButton(
-                    onClick = {
-                        if (inputText.isNotBlank()) {
-                            chatMessages.add(ChatMessage(inputText, "BẠN • BÂY GIỜ", true))
-                            val currentInput = inputText
-                            inputText = ""
-                            // Mock Response
-                            chatMessages.add(ChatMessage("Rất vui được nói chuyện với bạn.", "AI FL • BÂY GIỜ", false))
-                        }
-                    },
+                    onClick = { sendChat(inputText.trim()) },
+                    enabled = !loading && inputText.isNotBlank(),
                     colors = IconButtonDefaults.iconButtonColors(containerColor = PrimaryGreen)
                 ) {
                     Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White)
@@ -203,43 +296,120 @@ fun AssistantScreen(
 }
 
 @Composable
-fun AiChatBubble(message: String, time: String) {
-    Column(
-        modifier = Modifier.fillMaxWidth(0.85f),
-        horizontalAlignment = Alignment.Start
+private fun FloraAvatar(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    Surface(
+        modifier = modifier,
+        shape = CircleShape,
+        color = Color.White,
+        shadowElevation = 2.dp
     ) {
-        Surface(
-            shape = RoundedCornerShape(topStart = 4.dp, topEnd = 24.dp, bottomEnd = 24.dp, bottomStart = 24.dp),
-            color = Color.White,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = message,
-                modifier = Modifier.padding(20.dp),
-                color = DarkTextColor,
-                fontSize = 15.sp,
-                lineHeight = 22.sp
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = time,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            color = SecondaryTextColor.copy(alpha = 0.7f),
-            modifier = Modifier.padding(start = 4.dp)
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data(FLORA_AVATAR_ASSET)
+                .crossfade(true)
+                .build(),
+            contentDescription = "Flora AI",
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+                .background(LightGreenBackground),
+            contentScale = ContentScale.Crop
         )
     }
 }
 
 @Composable
-fun UserChatBubble(message: String, time: String) {
+private fun ChatbotTourCardItem(tour: ChatbotTourCard) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column {
+            val imageUrl = tour.imageUrl
+            if (!imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = tour.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = tour.title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = DarkTextColor
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${tour.durationDays} ngày • ${String.format("%,d", tour.price)}đ",
+                    color = SecondaryTextColor,
+                    fontSize = 13.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiChatBubble(message: String, time: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.Top
+    ) {
+        FloraAvatar(modifier = Modifier.size(40.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(modifier = Modifier.widthIn(max = 280.dp)) {
+            Surface(
+                shape = RoundedCornerShape(
+                    topStart = 4.dp,
+                    topEnd = 24.dp,
+                    bottomEnd = 24.dp,
+                    bottomStart = 24.dp
+                ),
+                color = Color.White,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = message,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                    color = DarkTextColor,
+                    fontSize = 15.sp,
+                    lineHeight = 22.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = time,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = SecondaryTextColor.copy(alpha = 0.7f),
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun UserChatBubble(message: String, time: String) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.End
     ) {
         Surface(
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 4.dp, bottomEnd = 24.dp, bottomStart = 24.dp),
+            shape = RoundedCornerShape(
+                topStart = 24.dp,
+                topEnd = 4.dp,
+                bottomEnd = 24.dp,
+                bottomStart = 24.dp
+            ),
             color = PrimaryGreen,
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
@@ -263,75 +433,22 @@ fun UserChatBubble(message: String, time: String) {
 }
 
 @Composable
-fun RecommendationCard(title: String, description: String, tag: String, tagColor: Color, imageResId: Int? = null) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-            ) {
-                if (imageResId != null) {
-                    Image(
-                        painter = painterResource(id = imageResId),
-                        contentDescription = title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFE0E0E0)))
-                }
-                
-                Surface(
-                    modifier = Modifier.padding(12.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = tagColor
-                ) {
-                    Text(
-                        text = tag,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text(
-                    text = title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = DarkTextColor
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = description,
-                    color = SecondaryTextColor,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun QuickActionChip(label: String) {
+private fun QuickActionChip(label: String, onClick: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = LightGreenBackground, // Light greenish gray
-        modifier = Modifier.padding(vertical = 4.dp)
+        color = LightGreenBackground,
+        modifier = Modifier
+            .padding(vertical = 2.dp)
+            .clickable(onClick = onClick)
     ) {
         Text(
             text = label,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
-            color = DarkTextColor
+            color = DarkTextColor,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

@@ -11,10 +11,10 @@ data class ChatbotRequest(
 
 data class QuickReply(
     @SerializedName("label") val label: String,
-    @SerializedName("payload") val payload: String
+    @SerializedName("payload") val payload: String? = null
 )
 
-data class TourCard(
+data class ChatbotTourCard(
     @SerializedName("id") val id: String,
     @SerializedName("title") val title: String,
     @SerializedName("slug") val slug: String,
@@ -26,7 +26,7 @@ data class TourCard(
 
 data class ChatbotResponse(
     @SerializedName("reply") val reply: String,
-    @SerializedName("tours") val tours: List<TourCard>?,
+    @SerializedName("tours") val tours: List<ChatbotTourCard>?,
     @SerializedName("quickReplies") val quickReplies: List<QuickReply>?,
     @SerializedName("state") val state: Map<String, Any>?
 )

@@ -13,7 +13,7 @@ if (envFile.exists()) {
         env.load(it)
     }
 }
-val apiUrl = env.getProperty("VITE_API_URL") ?: "https://khanhtn45.id.vn/api"
+val apiUrl = env.getProperty("VITE_API_URL") ?: "https://flourishtravel-rtdye.ondigitalocean.app/api"
 
 android {
     namespace = "com.example.flourishtavelapp"

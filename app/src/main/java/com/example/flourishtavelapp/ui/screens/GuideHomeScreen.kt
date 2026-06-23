@@ -884,6 +884,8 @@ fun ChatListItem(title: String, subtitle: String, time: String, unreadCount: Int
 
 // ─── Tab 3 / FAB: Guide AI assistant screen ──────────────────────────────────
 
+private data class ChatMessage(val message: String, val time: String, val isUser: Boolean)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GuideAIScreen() {

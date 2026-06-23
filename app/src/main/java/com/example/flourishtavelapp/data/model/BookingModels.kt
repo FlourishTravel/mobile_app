@@ -71,11 +71,26 @@ data class ApiResponseValidatePromo(
 )
 
 data class BookingSummary(
-    @SerializedName("id") val id: String,
-    @SerializedName("tourName") val tourName: String?,
-    @SerializedName("status") val status: String,
-    @SerializedName("totalAmount") val totalAmount: Long?,
-    @SerializedName("createdAt") val createdAt: String?
+    @SerializedName("bookingId") val bookingId: String,
+    @SerializedName("bookingStatus") val bookingStatus: String,
+    @SerializedName("guestCount") val guestCount: Int? = null,
+    @SerializedName("totalAmount") val totalAmount: Double? = null,
+    @SerializedName("discountAmount") val discountAmount: Double? = null,
+    @SerializedName("bookedAt") val bookedAt: String? = null,
+    @SerializedName("sessionId") val sessionId: String? = null,
+    @SerializedName("sessionStartDate") val sessionStartDate: String? = null,
+    @SerializedName("sessionEndDate") val sessionEndDate: String? = null,
+    @SerializedName("sessionStatus") val sessionStatus: String? = null,
+    @SerializedName("tourId") val tourId: String? = null,
+    @SerializedName("tourTitle") val tourTitle: String? = null,
+    @SerializedName("tourSlug") val tourSlug: String? = null,
+    @SerializedName("tourThumbnailUrl") val tourThumbnailUrl: String? = null,
+    @SerializedName("tourDurationDays") val tourDurationDays: Int? = null,
+    @SerializedName("tourDurationNights") val tourDurationNights: Int? = null,
+    @SerializedName("categoryName") val categoryName: String? = null,
+    @SerializedName("paymentStatus") val paymentStatus: String? = null,
+    @SerializedName("paymentOrderId") val paymentOrderId: String? = null,
+    @SerializedName("refundPending") val refundPending: Boolean = false
 )
 
 data class ApiResponseBookingList(

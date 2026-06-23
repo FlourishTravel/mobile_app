@@ -1,13 +1,13 @@
-package com.example.flourishtavelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
-import com.example.flourishtavelapp.data.api.RetrofitClient
-import com.example.flourishtavelapp.data.model.BookingSummary
-import com.example.flourishtavelapp.data.model.Tour
-import com.example.flourishtavelapp.data.model.FavoriteRequest
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.BookingSummary
+import com.example.flourishtravelapp.data.model.Tour
+import com.example.flourishtravelapp.data.model.FavoriteRequest
 import kotlinx.coroutines.launch
-import com.example.flourishtavelapp.R
+import com.example.flourishtravelapp.R
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -53,7 +53,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
-import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtravelapp.ui.components.FloraJourneyPanel
+import com.example.flourishtravelapp.ui.components.rememberFloraJourneyState
+import com.example.flourishtravelapp.ui.theme.*
 
 // Mock model for our tours
 data class TourItem(
@@ -81,6 +83,9 @@ private fun formatBookingStatus(status: String): String = when (status.lowercase
     "cancelled" -> "Đã hủy"
     else -> status
 }
+
+private fun isUuid(value: String): Boolean =
+    Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$").matches(value)
 
 private fun fallbackImageForTitle(title: String): Int = when {
     title.contains("Phi Phi", ignoreCase = true) -> R.drawable.phiphi_bg
@@ -121,21 +126,21 @@ val mockThailandItinerary = listOf(
                 title = "Nhận phòng khách sạn 5* tại trung tâm",
                 status = ActivityStatus.Completed,
                 description = "Trải nghiệm không gian sang trọng và tiện nghi bậc nhất ngay tại trung tâm thủ đô Bangkok, giúp quý khách thư giãn sau chuyến bay dài.",
-                imageRes = com.example.flourishtavelapp.R.drawable.travel_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.travel_bg
             ),
             ActivityItem(
                 id = "t1_act2",
                 title = "Dạo thuyền trên sông Chao Phraya",
                 status = ActivityStatus.Completed,
                 description = "Dòng sông huyền thoại chảy qua lòng Bangkok, nơi bạn có thể ngắm nhìn các ngôi chùa cổ kính và nhịp sống sôi động hai bên bờ khi hoàng hôn buông xuống.",
-                imageRes = com.example.flourishtavelapp.R.drawable.chaoriver_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.chaoriver_bg
             ),
             ActivityItem(
                 id = "t1_act3",
                 title = "Thưởng thức buffet tối phong cách hoàng gia",
                 status = ActivityStatus.Current,
                 description = "Thưởng thức tinh hoa ẩm thực Thái Lan với hàng trăm món ăn truyền thống và quốc tế được chế biến bởi các đầu bếp hàng đầu trong không gian cung đình sang trọng.",
-                imageRes = com.example.flourishtavelapp.R.drawable.joddfairs_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.joddfairs_bg
             )
         )
     ),
@@ -149,14 +154,14 @@ val mockThailandItinerary = listOf(
                 title = "Tham quan Chùa Cung Điện Hoàng Gia Wat Phra Kaew",
                 status = ActivityStatus.Upcoming,
                 description = "Wat Phra Kaew là ngôi chùa nổi tiếng và linh thiêng nhất tại Thái Lan, nơi lưu giữ bức tượng Phật Ngọc quý giá của vương triều.",
-                imageRes = com.example.flourishtavelapp.R.drawable.awat_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.awat_bg
             ),
             ActivityItem(
                 id = "t1_act5",
                 title = "Khám phá Wat Arun - Chùa Bình Minh",
                 status = ActivityStatus.Upcoming,
                 description = "Ngôi chùa cổ kính và lộng lẫy nằm bên bờ sông Chao Phraya, biểu tượng tâm linh và kiến trúc độc đáo bậc nhất của thủ đô Bangkok.",
-                imageRes = com.example.flourishtavelapp.R.drawable.awat_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.awat_bg
             )
         )
     ),
@@ -170,14 +175,14 @@ val mockThailandItinerary = listOf(
                 title = "Ghé thăm Chùa Wat Phra That Doi Suthep",
                 status = ActivityStatus.Upcoming,
                 description = "Ngôi chùa thiêng liêng nằm trên đỉnh núi Doi Suthep, từ đây bạn có thể phóng tầm mắt ngắm toàn cảnh thung lũng Chiang Mai mộng mơ.",
-                imageRes = com.example.flourishtavelapp.R.drawable.chiangmai_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.chiangmai_bg
             ),
             ActivityItem(
                 id = "t1_act7",
                 title = "Trải nghiệm khu làng voi thân thiện nhân đạo",
                 status = ActivityStatus.Upcoming,
                 description = "Tìm hiểu đời sống loài voi tại trung tâm bảo tồn, cùng tắm voi và làm thức ăn cho voi một cách nhân văn, bền vững.",
-                imageRes = com.example.flourishtavelapp.R.drawable.travel_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.travel_bg
             )
         )
     ),
@@ -191,7 +196,7 @@ val mockThailandItinerary = listOf(
                 title = "Tắm biển và lặn ngắm san hô tại đảo Phi Phi",
                 status = ActivityStatus.Upcoming,
                 description = "Hòa mình vào làn nước trong vắt nhìn thấy đáy, khám phá các rặng san hô đa sắc màu cùng hàng ngàn loài sinh vật biển kỳ thú.",
-                imageRes = com.example.flourishtavelapp.R.drawable.phiphi_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.phiphi_bg
             )
         )
     )
@@ -208,14 +213,14 @@ val mockPhiPhiItinerary = listOf(
                 title = "Đón khách tại khách sạn ở Phuket ra bến tàu",
                 status = ActivityStatus.Completed,
                 description = "Xe du lịch chất lượng cao đón quý khách tại khách sạn trong khu vực Patong/Karon ra bến cảng khởi hành.",
-                imageRes = com.example.flourishtavelapp.R.drawable.phuket_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.phuket_bg
             ),
             ActivityItem(
                 id = "t2_act2",
                 title = "Lên tàu cao tốc Speedboat di chuyển ra quần đảo Phi Phi",
                 status = ActivityStatus.Completed,
                 description = "Trải nghiệm tàu cao tốc cực nhanh lướt sóng qua vịnh biển xanh ngắt, đón những luồng gió biển sảng khoái.",
-                imageRes = com.example.flourishtavelapp.R.drawable.phiphi_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.phiphi_bg
             )
         )
     ),
@@ -229,21 +234,21 @@ val mockPhiPhiItinerary = listOf(
                 title = "Lặn biển snorkeling tại vịnh Loh Samah",
                 status = ActivityStatus.Current,
                 description = "Đắm mình vào làn nước ấm áp, trang bị kính lặn và ống thở để ngắm nhìn trực tiếp các rặng san hô tự nhiên cùng đàn cá hề bơi lượn.",
-                imageRes = com.example.flourishtavelapp.R.drawable.phiphi_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.phiphi_bg
             ),
             ActivityItem(
                 id = "t2_act4",
                 title = "Thăm vịnh Maya - Thiên đường ẩn giấu",
                 status = ActivityStatus.Upcoming,
                 description = "Bãi biển nổi tiếng thế giới với những vách núi đá vôi dựng đứng bao bọc bãi cát trắng mịn màng như bột phấn.",
-                imageRes = com.example.flourishtavelapp.R.drawable.maya_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.maya_bg
             ),
             ActivityItem(
                 id = "t2_act5",
                 title = "Ăn trưa buffet hải sản trên đảo Phi Phi Don",
                 status = ActivityStatus.Upcoming,
                 description = "Thưởng thức tiệc buffet thịnh soạn tại nhà hàng sát biển với các món hải sản nướng tươi sống, đồ uống mát lạnh.",
-                imageRes = com.example.flourishtavelapp.R.drawable.joddfairs_bg
+                imageRes = com.example.flourishtravelapp.R.drawable.joddfairs_bg
             )
         )
     )
@@ -767,7 +772,6 @@ fun TripsMainListScreen(
                                         )
                                     }
 
-                                    // Cancel Booking Button for booked tours
                                     if (selectedTabIndex == 0 && tour.rawBookingStatus?.lowercase() != "cancelled") {
                                         Button(
                                             onClick = {
@@ -835,12 +839,14 @@ fun DetailedItineraryScreen(
     tour: TourItem,
     onBack: () -> Unit
 ) {
-    // Retrieve correct itinerary based on tour ID
-    val dayPlans = when (tour.id) {
+    val dayPlans = when (tour.catalogTourId) {
         "4" -> mockThailandItinerary
         "5" -> mockPhiPhiItinerary
-        else -> mockThailandItinerary // Fallback
+        else -> emptyList()
     }
+
+    val floraBookingId = if (tour.isBooked && isUuid(tour.id)) tour.id else null
+    val floraState = floraBookingId?.let { rememberFloraJourneyState(it) }
 
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabList = listOf(
@@ -849,14 +855,12 @@ fun DetailedItineraryScreen(
         "Thông tin thêm"
     )
 
-    // Days expanded map state (Day 1 is open by default)
     val expandedDays = remember {
         mutableStateMapOf<Int, Boolean>().apply {
-            put(1, true) // Day 1 expanded by default
+            put(1, true)
         }
     }
 
-    // State for location detail popup dialog
     var activeActivityDetail by remember { mutableStateOf<ActivityItem?>(null) }
 
     Box(
@@ -867,9 +871,8 @@ fun DetailedItineraryScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 100.dp) // Leave space for pinned bottom bar
+                .padding(bottom = 100.dp)
         ) {
-            // ── 1. Hero Header Image matching TourDetailScreen exactly ──
             item {
                 Box(
                     modifier = Modifier
@@ -883,7 +886,6 @@ fun DetailedItineraryScreen(
                         contentScale = ContentScale.Crop
                     )
                     
-                    // Gradient overlay
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -898,7 +900,6 @@ fun DetailedItineraryScreen(
                             )
                     )
 
-                    // Floating circular header buttons
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -955,7 +956,12 @@ fun DetailedItineraryScreen(
                 }
             }
 
-            // ── 2. Sticky Scrollable Tab Row with green primary color indicator ──
+            if (floraBookingId != null) {
+                item {
+                    floraState?.let { FloraJourneyPanel(state = it) }
+                }
+            }
+
             stickyHeader {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -997,14 +1003,12 @@ fun DetailedItineraryScreen(
                 }
             }
 
-            // ── 3. Content Area based on Selected Tab ──
             item {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 20.dp)
                 ) {
-                    // Tour general title and metadata
                     Text(
                         text = tour.title,
                         fontWeight = FontWeight.Bold,
@@ -1042,7 +1046,6 @@ fun DetailedItineraryScreen(
 
                     when (selectedTab) {
                         0 -> {
-                            // ── TAB 0: HÀNH TRÌNH CHI TIẾT (Timeline Accordion) ──
                             Text(
                                 text = "Tiến độ hành trình chi tiết của bạn",
                                 fontWeight = FontWeight.Bold,
@@ -1051,7 +1054,6 @@ fun DetailedItineraryScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Day Plans Column of Timeline items
                             dayPlans.forEachIndexed { index, dayPlan ->
                                 val isExpanded = expandedDays[dayPlan.dayNumber] ?: false
                                 val hasCurrentActivity = dayPlan.activities.any { it.status == ActivityStatus.Current }
@@ -1061,7 +1063,6 @@ fun DetailedItineraryScreen(
                                         .fillMaxWidth()
                                         .height(IntrinsicSize.Min)
                                 ) {
-                                    // Left vertical connection line & dots
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier
@@ -1099,7 +1100,6 @@ fun DetailedItineraryScreen(
                                         }
                                     }
 
-                                    // Right Accordion Day Card
                                     Card(
                                         modifier = Modifier
                                             .weight(1f)
@@ -1116,7 +1116,6 @@ fun DetailedItineraryScreen(
                                                 .fillMaxWidth()
                                                 .padding(16.dp)
                                         ) {
-                                            // Header
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1137,7 +1136,6 @@ fun DetailedItineraryScreen(
                                                 )
                                             }
 
-                                            // Expanded Day Details
                                             if (isExpanded) {
                                                 Spacer(modifier = Modifier.height(6.dp))
                                                 Text(
@@ -1214,7 +1212,6 @@ fun DetailedItineraryScreen(
                         }
 
                         1 -> {
-                            // ── TAB 1: VÉ ĐIỆN TỬ (E-Ticket) ──
                             Text(
                                 text = "Thông tin Vé Điện Tử đặt chỗ",
                                 fontWeight = FontWeight.Bold,
@@ -1263,7 +1260,6 @@ fun DetailedItineraryScreen(
 
                                     HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp), color = Color(0xFFF2F2F2))
 
-                                    // Customer Details
                                     TicketDetailRow("Khách hàng", "Bảo")
                                     TicketDetailRow("Khởi hành", tour.bookingDate ?: "28/05/2026")
                                     TicketDetailRow("Thời gian", "5 ngày 4 đêm")
@@ -1271,7 +1267,6 @@ fun DetailedItineraryScreen(
 
                                     HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp), color = Color(0xFFF2F2F2))
 
-                                    // Simulating QR Code Scanner Graphic
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1306,7 +1301,6 @@ fun DetailedItineraryScreen(
                         }
 
                         2 -> {
-                            // ── TAB 2: THÔNG TIN THÊM (Preparation guidelines) ──
                             Text(
                                 text = "Thông tin cẩm nang chuẩn bị chuyến đi",
                                 fontWeight = FontWeight.Bold,
@@ -1350,7 +1344,6 @@ fun DetailedItineraryScreen(
             }
         }
 
-        // ── 4. Pinned Bottom Bar ──
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -1359,7 +1352,6 @@ fun DetailedItineraryScreen(
             shadowElevation = 16.dp
         ) {
             Column {
-                // FLOURISH promo text
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1409,7 +1401,6 @@ fun DetailedItineraryScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Heart button
                         Surface(
                             modifier = Modifier.size(48.dp),
                             shape = CircleShape,
@@ -1426,9 +1417,8 @@ fun DetailedItineraryScreen(
                             }
                         }
 
-                        // Action button (QR Code E-ticket check-in)
                         Button(
-                            onClick = { selectedTab = 1 }, // Navigates to QR Code Ticket Tab
+                            onClick = { selectedTab = 1 },
                             modifier = Modifier
                                 .width(180.dp)
                                 .height(48.dp),
@@ -1450,7 +1440,6 @@ fun DetailedItineraryScreen(
         }
     }
 
-    // Modal popup dialog if an activity detail is active
     if (activeActivityDetail != null) {
         LocationDetailDialog(
             activity = activeActivityDetail!!,
@@ -1490,7 +1479,6 @@ fun LocationDetailDialog(
                     .fillMaxWidth()
                     .padding(bottom = 24.dp)
             ) {
-                // Image with rounded corners and overlapping circular close button
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1506,7 +1494,6 @@ fun LocationDetailDialog(
                         contentScale = ContentScale.Crop
                     )
 
-                    // Overlapping circular close button (white '✕' in semi-transparent circle)
                     Surface(
                         modifier = Modifier
                             .padding(16.dp)
@@ -1529,7 +1516,6 @@ fun LocationDetailDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Location Title - capitalized, extra-bold, centered
                 Text(
                     text = activity.title.uppercase(),
                     style = MaterialTheme.typography.titleMedium.copy(
@@ -1545,7 +1531,6 @@ fun LocationDetailDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Location Description - comfortable line height, centered, gray
                 Text(
                     text = activity.description,
                     style = MaterialTheme.typography.bodyMedium.copy(
