@@ -53,6 +53,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
+import com.example.flourishtavelapp.ui.components.FloraJourneyPanel
+import com.example.flourishtavelapp.ui.components.FloraPostTourFeedbackPanel
+import com.example.flourishtavelapp.ui.components.rememberFloraJourneyState
 import com.example.flourishtavelapp.ui.theme.*
 
 // Mock model for our tours
@@ -88,6 +91,9 @@ private fun fallbackImageForTitle(title: String): Int = when {
     title.contains("Chiang Mai", ignoreCase = true) -> R.drawable.chiangmai_bg
     else -> R.drawable.awat_bg
 }
+
+private fun isUuid(value: String): Boolean =
+    Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$").matches(value)
 
 // Detailed itinerary models
 enum class ActivityStatus {
@@ -835,12 +841,14 @@ fun DetailedItineraryScreen(
     tour: TourItem,
     onBack: () -> Unit
 ) {
-    // Retrieve correct itinerary based on tour ID
-    val dayPlans = when (tour.id) {
+    val dayPlans = when (tour.catalogTourId) {
         "4" -> mockThailandItinerary
         "5" -> mockPhiPhiItinerary
-        else -> mockThailandItinerary // Fallback
+        else -> emptyList()
     }
+
+    val floraBookingId = if (tour.isBooked && isUuid(tour.id)) tour.id else null
+    val floraState = floraBookingId?.let { rememberFloraJourneyState(it) }
 
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabList = listOf(
@@ -952,6 +960,15 @@ fun DetailedItineraryScreen(
                             }
                         }
                     }
+                }
+            }
+
+            if (floraBookingId != null) {
+                item {
+                    floraState?.let { FloraJourneyPanel(state = it) }
+                }
+                item {
+                    FloraPostTourFeedbackPanel(bookingId = floraBookingId)
                 }
             }
 

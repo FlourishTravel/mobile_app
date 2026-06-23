@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
 
 enum class NavigationState {
     Login, Register, MainApp, TourDetail, BookingReview, PaymentInfo, BankTransfer, BookingSuccess,
-    GuideHome, GuideTourDetail, GuideCustomerList, Activities
+    GuideHome, GuideTourDetail, GuideCustomerList, Activities, FloraSettings
 }
 
 @Composable
@@ -243,6 +243,16 @@ fun AppNavigation() {
                 onBack = { navState = NavigationState.MainApp },
                 onActivityClick = { navState = NavigationState.TourDetail }
             )
+            NavigationState.FloraSettings -> {
+                if (isLoggedIn) {
+                    FloraSettingsScreen(
+                        modifier = Modifier.padding(innerPadding),
+                        onBack = { navState = NavigationState.MainApp; selectedTab = 4 }
+                    )
+                } else {
+                    LaunchedEffect(Unit) { navState = NavigationState.Login }
+                }
+            }
             // ── Guide Screens ──────────────────────────────────────────────
             NavigationState.GuideHome -> GuideHomeScreen(
                 guide = currentGuide,
@@ -362,6 +372,9 @@ fun AppNavigation() {
                                     sessionManager.clearSession()
                                     isLoggedIn = false
                                     selectedTab = 0
+                                },
+                                onFloraSettingsClick = {
+                                    navState = NavigationState.FloraSettings
                                 }
                             )
                         } else {

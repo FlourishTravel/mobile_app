@@ -19,7 +19,15 @@ object RetrofitClient {
         this.sessionManager = sessionManager
     }
 
-    private val loggingInterceptor = HttpLoggingInterceptor().apply {
+    private val loggingInterceptor = HttpLoggingInterceptor { message ->
+        val redacted = message
+            .replace(Regex("\"latitude\"\\s*:\\s*-?[\\d.]+"), "\"latitude\":\"[redacted]\"")
+            .replace(Regex("\"longitude\"\\s*:\\s*-?[\\d.]+"), "\"longitude\":\"[redacted]\"")
+            .replace(Regex("\"foodAllergies\"\\s*:\\s*\\[[^\\]]*]"), "\"foodAllergies\":\"[redacted]\"")
+            .replace(Regex("\"comment\"\\s*:\\s*\"[^\"]*\""), "\"comment\":\"[redacted]\"")
+            .replace(Regex("Bearer\\s+\\S+"), "Bearer [redacted]")
+        android.util.Log.d("OkHttp", redacted)
+    }.apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
@@ -98,5 +106,23 @@ object RetrofitClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ChatbotApiService::class.java)
+    }
+
+    val floraApiService: FloraApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(FloraApiService::class.java)
+    }
+
+    val reviewApiService: ReviewApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ReviewApiService::class.java)
     }
 }

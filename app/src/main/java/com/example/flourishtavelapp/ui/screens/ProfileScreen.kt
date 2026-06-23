@@ -55,7 +55,8 @@ fun ProfileScreen(
     onProfileUpdate: (String, String, String, String, String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onFloraSettingsClick: () -> Unit = {}
 ) {
     // Intercept back press to return to Homepage
     BackHandler {
@@ -454,6 +455,12 @@ fun ProfileScreen(
 
                 // Card 4: Settings
                 ProfileCard(title = "Cài đặt") {
+                    ProfileRowItem(
+                        icon = Icons.Default.SmartToy,
+                        title = "Cài đặt Flora AI",
+                        rightText = "Quyền riêng tư",
+                        onClick = onFloraSettingsClick
+                    )
                     ProfileRowItem(
                         icon = Icons.Default.Language,
                         title = "Ngôn ngữ",
