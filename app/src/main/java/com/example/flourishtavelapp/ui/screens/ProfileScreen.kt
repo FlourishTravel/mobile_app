@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.flourishtavelapp.ui.theme.*
 import com.example.flourishtavelapp.data.api.RetrofitClient
+import com.example.flourishtavelapp.push.LogoutCoordinator
 import com.example.flourishtavelapp.data.api.FileUtils
 import com.example.flourishtavelapp.data.model.ChangePasswordRequest
 import com.example.flourishtavelapp.data.model.UpdateProfileRequest
@@ -621,9 +622,7 @@ fun ProfileScreen(
                             coroutineScope.launch {
                                 isLoading = true
                                 try {
-                                    RetrofitClient.authApiService.logout()
-                                } catch (e: Exception) {
-                                    // Proceed to clear local session even on failure
+                                    LogoutCoordinator.performLogout(context, sessionManager)
                                 } finally {
                                     isLoading = false
                                     onLogout()
@@ -916,10 +915,11 @@ fun ProfileScreen(
                         coroutineScope.launch {
                             isLoading = true
                             try {
-                                RetrofitClient.authApiService.logout()
-                            } catch (e: Exception) {}
-                            isLoading = false
-                            onLogout()
+                                LogoutCoordinator.performLogout(context, sessionManager)
+                            } finally {
+                                isLoading = false
+                                onLogout()
+                            }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red)

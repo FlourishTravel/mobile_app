@@ -17,6 +17,7 @@ class SessionManager(context: Context) {
         private const val KEY_USER_ROLE = "user_role"
         private const val KEY_USER_AVATAR = "user_avatar"
         private const val KEY_USER_PHONE = "user_phone"
+        private const val KEY_FCM_TOKEN = "fcm_token_local"
     }
 
     fun saveSession(accessToken: String, refreshToken: String, user: UserInfo) {
@@ -59,6 +60,16 @@ class SessionManager(context: Context) {
     }
 
     fun isLoggedIn(): Boolean = getAccessToken() != null
+
+    fun saveFcmToken(token: String) {
+        prefs.edit().putString(KEY_FCM_TOKEN, token).apply()
+    }
+
+    fun getFcmToken(): String? = prefs.getString(KEY_FCM_TOKEN, null)
+
+    fun clearFcmToken() {
+        prefs.edit().remove(KEY_FCM_TOKEN).apply()
+    }
 
     fun clearSession() {
         prefs.edit().clear().apply()

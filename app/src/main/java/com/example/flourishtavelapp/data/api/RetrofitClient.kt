@@ -25,6 +25,7 @@ object RetrofitClient {
             .replace(Regex("\"longitude\"\\s*:\\s*-?[\\d.]+"), "\"longitude\":\"[redacted]\"")
             .replace(Regex("\"foodAllergies\"\\s*:\\s*\\[[^\\]]*]"), "\"foodAllergies\":\"[redacted]\"")
             .replace(Regex("\"comment\"\\s*:\\s*\"[^\"]*\""), "\"comment\":\"[redacted]\"")
+            .replace(Regex("\"token\"\\s*:\\s*\"[^\"]+\""), "\"token\":\"[redacted]\"")
             .replace(Regex("Bearer\\s+\\S+"), "Bearer [redacted]")
         android.util.Log.d("OkHttp", redacted)
     }.apply {
@@ -124,5 +125,14 @@ object RetrofitClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ReviewApiService::class.java)
+    }
+
+    val pushDeviceApiService: PushDeviceApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(PushDeviceApiService::class.java)
     }
 }

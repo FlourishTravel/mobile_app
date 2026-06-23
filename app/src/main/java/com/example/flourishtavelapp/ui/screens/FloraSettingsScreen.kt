@@ -1,6 +1,12 @@
 package com.example.flourishtavelapp.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,6 +60,8 @@ import com.example.flourishtavelapp.data.repository.PreferenceLoadResult
 import com.example.flourishtavelapp.data.repository.PreferenceSaveResult
 import com.example.flourishtavelapp.data.session.SessionManager
 import com.example.flourishtavelapp.location.LocationPermissionHelper
+import com.example.flourishtavelapp.push.DevicePushPolicy
+import com.example.flourishtavelapp.push.PushTokenRepository
 import com.example.flourishtavelapp.ui.theme.NatureGreenBackground
 import com.example.flourishtavelapp.ui.theme.PrimaryGreen
 import com.example.flourishtavelapp.ui.theme.SecondaryTextColor
@@ -83,6 +91,10 @@ fun FloraSettingsScreen(
     var saving by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var statusIsError by remember { mutableStateOf(false) }
+    var pushStatusLabel by remember { mutableStateOf("Chưa bật") }
+    var pushSyncMessage by remember { mutableStateOf<String?>(null) }
+
+    val pushRepo = remember { PushTokenRepository(context, sessionManager) }
 
   // Text fields for comma-separated lists
     var favoriteDestinationsText by remember { mutableStateOf("") }
@@ -130,6 +142,40 @@ fun FloraSettingsScreen(
     }
 
     val deviceLocationGranted = LocationPermissionHelper.hasForegroundLocationPermission(context)
+    val deviceNotificationGranted = DevicePushPolicy.hasNotificationPermission(context)
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        scope.launch {
+            if (draft.notificationConsent == true && granted) {
+                val ok = pushRepo.registerCurrentToken(true)
+                pushStatusLabel = if (ok) "Đã bật" else "Chưa bật"
+                pushSyncMessage = if (ok) null else "Chưa đăng ký được thông báo thiết bị. Flora vẫn hiển thị thông báo trong ứng dụng."
+            } else if (!granted) {
+                pushStatusLabel = "Chưa bật"
+                pushSyncMessage = DevicePushPolicy.PERMISSION_DENIED_MESSAGE
+            }
+        }
+    }
+
+    fun refreshPushStatus() {
+        scope.launch {
+            val remote = pushRepo.fetchRemoteStatus()
+            pushStatusLabel = when {
+                remote?.pushEnabled == true -> "Đã bật"
+                draft.notificationConsent != true -> "Không khả dụng"
+                !deviceNotificationGranted -> "Chưa bật"
+                else -> "Chưa bật"
+            }
+        }
+    }
+
+    LaunchedEffect(screenState, draft.notificationConsent, deviceNotificationGranted) {
+        if (screenState is FloraSettingsUiState.Loaded) {
+            refreshPushStatus()
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -211,6 +257,50 @@ fun FloraSettingsScreen(
                     )
 
                     PrivacyInfoCard(deviceLocationGranted = deviceLocationGranted)
+
+                    SettingsSection(title = "Thông báo trên thiết bị") {
+                        Text(
+                            "Thông báo từ Flora chỉ được gửi khi bạn đã bật nhận thông báo trong Flourish-Travel và cho phép thông báo trên thiết bị.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SecondaryTextColor
+                        )
+                        Text("Trạng thái: $pushStatusLabel", fontWeight = FontWeight.SemiBold)
+                        pushSyncMessage?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = Color(0xFF92400E))
+                        }
+                        Button(
+                            onClick = {
+                                if (draft.notificationConsent != true) {
+                                    pushSyncMessage = "Hãy bật \"Nhận thông báo từ Flora\" trước, sau đó lưu cài đặt."
+                                    return@Button
+                                }
+                                if (DevicePushPolicy.requiresRuntimePermission()) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    scope.launch {
+                                        val ok = pushRepo.registerCurrentToken(true)
+                                        pushStatusLabel = if (ok) "Đã bật" else "Chưa bật"
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Bật thông báo trên thiết bị")
+                        }
+                        if (DevicePushPolicy.requiresRuntimePermission() && !deviceNotificationGranted) {
+                            Button(
+                                onClick = {
+                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                        data = Uri.fromParts("package", context.packageName, null)
+                                    }
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Mở cài đặt ứng dụng")
+                            }
+                        }
+                    }
 
                     SettingsSection(title = "Quyền riêng tư Flora") {
                         ConsentSwitchRow(
@@ -366,6 +456,13 @@ fun FloraSettingsScreen(
                                         applyDraftToTexts(result.data)
                                         statusIsError = false
                                         statusMessage = "Đã lưu cài đặt Flora AI."
+                                        if (result.data.notificationConsent != true) {
+                                            pushRepo.unregisterCurrentToken()
+                                            pushStatusLabel = "Không khả dụng"
+                                        } else if (DevicePushPolicy.hasNotificationPermission(context)) {
+                                            pushRepo.syncIfEligible(true, true)
+                                            refreshPushStatus()
+                                        }
                                     }
                                     is PreferenceSaveResult.Unauthorized -> {
                                         statusIsError = true
