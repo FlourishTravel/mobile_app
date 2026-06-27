@@ -1,10 +1,10 @@
-package com.example.flourishtavelapp.data.api
+﻿package com.example.flourishtravelapp.data.api
 
-import com.example.flourishtavelapp.data.model.ApiEnvelope
-import com.example.flourishtavelapp.data.model.PushDeviceRegisterRequest
-import com.example.flourishtavelapp.data.model.PushDeviceRegisterResponse
-import com.example.flourishtavelapp.data.model.PushDeviceStatusResponse
-import com.example.flourishtavelapp.data.model.PushDeviceUnregisterRequest
+import com.example.flourishtravelapp.data.model.ApiEnvelope
+import com.example.flourishtravelapp.data.model.PushDeviceRegisterRequest
+import com.example.flourishtravelapp.data.model.PushDeviceRegisterResponse
+import com.example.flourishtravelapp.data.model.PushDeviceStatusResponse
+import com.example.flourishtravelapp.data.model.PushDeviceUnregisterRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET

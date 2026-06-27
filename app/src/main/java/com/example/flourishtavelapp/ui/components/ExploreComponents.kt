@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.components
+﻿package com.example.flourishtravelapp.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtravelapp.ui.theme.*
 
 @Composable
 fun MapLocationItem(title: String, subtitle: String) {

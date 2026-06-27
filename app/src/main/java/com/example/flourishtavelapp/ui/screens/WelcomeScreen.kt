@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+﻿package com.example.flourishtravelapp.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,9 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.ui.components.FeatureCard
-import com.example.flourishtavelapp.ui.components.LoginTextField
-import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtravelapp.ui.components.FeatureCard
+import com.example.flourishtravelapp.ui.components.LoginTextField
+import com.example.flourishtravelapp.ui.theme.*
 
 @Composable
 fun WelcomeScreen(

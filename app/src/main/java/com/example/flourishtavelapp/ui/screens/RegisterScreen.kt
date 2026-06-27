@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+﻿package com.example.flourishtravelapp.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -31,11 +31,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.ui.theme.*
-import com.example.flourishtavelapp.data.api.RetrofitClient
-import com.example.flourishtavelapp.data.model.RegisterRequest
-import com.example.flourishtavelapp.data.session.SessionManager
-import com.example.flourishtavelapp.data.model.UserInfo
+import com.example.flourishtravelapp.ui.theme.*
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.RegisterRequest
+import com.example.flourishtravelapp.data.session.SessionManager
+import com.example.flourishtravelapp.data.model.UserInfo
 import kotlinx.coroutines.launch
 
 import androidx.activity.compose.BackHandler

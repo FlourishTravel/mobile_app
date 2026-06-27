@@ -1,10 +1,10 @@
-package com.example.flourishtavelapp.data.api
+﻿package com.example.flourishtravelapp.data.api
 
-import com.example.flourishtavelapp.data.model.ApiResponseAuthResponse
-import com.example.flourishtavelapp.data.model.ApiResponseVoid
-import com.example.flourishtavelapp.data.model.ChangePasswordRequest
-import com.example.flourishtavelapp.data.model.LoginRequest
-import com.example.flourishtavelapp.data.model.RegisterRequest
+import com.example.flourishtravelapp.data.model.ApiResponseAuthResponse
+import com.example.flourishtravelapp.data.model.ApiResponseVoid
+import com.example.flourishtravelapp.data.model.ChangePasswordRequest
+import com.example.flourishtravelapp.data.model.LoginRequest
+import com.example.flourishtravelapp.data.model.RegisterRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST

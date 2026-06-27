@@ -1,6 +1,6 @@
-package com.example.flourishtavelapp.data.preferences
+﻿package com.example.flourishtravelapp.data.preferences
 
-import com.example.flourishtavelapp.data.model.UpdateTravelPreferencesRequest
+import com.example.flourishtravelapp.data.model.UpdateTravelPreferencesRequest
 import org.junit.Assert.*
 import org.junit.Test
 

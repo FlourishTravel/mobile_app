@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 // ─── Data Models ────────────────────────────────────────────────────────────
 
@@ -22,15 +22,20 @@ data class GuideTourDay(
 )
 
 data class GuideTour(
+    val sessionId: String,
     val id: String,
     val name: String,
     val destination: String,
     val startDate: String,
     val endDate: String,
+    val startDateIso: String? = null,
+    val endDateIso: String? = null,
     val durationDays: Int,
     val totalCustomers: Int,
+    val checkedInParticipants: Int = 0,
     val status: TourStatus,
     val imageDescription: String,
+    val thumbnailUrl: String? = null,
     val meetingPoint: String,
     val itinerary: List<GuideTourDay>,
     val customers: List<TourCustomer>
@@ -51,7 +56,72 @@ data class TourCustomer(
     val adultCount: Int,
     val childCount: Int,
     val paymentStatus: PaymentStatus,
-    val note: String = ""
+    val note: String = "",
+    val travelerUserId: String? = null,
+    val checkedInGathering: Boolean = false,
+    val allParticipantsCheckedIn: Boolean = false,
+    val pickupAddress: String = "",
+    val emergencyContactName: String = "",
+    val emergencyContactPhone: String = "",
+    val participantAttendance: List<ParticipantAttendance> = emptyList()
+)
+
+data class ParticipantAttendance(
+    val participantId: String,
+    val displayName: String,
+    val phone: String,
+    val role: String,
+    val lineIndex: Int,
+    val checkInAt: String?,
+    val checkOutAt: String?,
+    val activityAttendance: List<ActivityAttendance> = emptyList()
+)
+
+data class ActivityAttendance(
+    val activityId: String,
+    val checkInAt: String?,
+    val checkOutAt: String?
+)
+
+data class ItineraryStop(
+    val activityId: String,
+    val dayNumber: Int,
+    val title: String,
+    val locationName: String,
+    val startTime: String,
+    val endTime: String,
+    val checkedInAtStopCount: Int
+)
+
+data class GuestSessionData(
+    val sessionId: String,
+    val tourTitle: String,
+    val tourCode: String,
+    val startDate: String,
+    val endDate: String,
+    val totalGuestSlots: Int,
+    val checkedInGuestSlots: Int,
+    val checkedOutParticipants: Int,
+    val paidBookingCount: Int,
+    val bookingsWithSpecialRequests: Int,
+    val itineraryStops: List<ItineraryStop>,
+    val bookings: List<GuestBooking>
+)
+
+data class GuestBooking(
+    val bookingId: String,
+    val travelerUserId: String?,
+    val travelerName: String,
+    val phone: String,
+    val email: String,
+    val guestCount: Int,
+    val specialRequests: String,
+    val pickupAddress: String,
+    val emergencyContactName: String,
+    val emergencyContactPhone: String,
+    val checkedInGathering: Boolean,
+    val allParticipantsCheckedIn: Boolean,
+    val participantAttendance: List<ParticipantAttendance>
 )
 
 enum class PaymentStatus(val label: String, val color: Long) {
@@ -73,107 +143,4 @@ data class GuideScheduleDay(
     val year: Int,
     val status: ScheduleStatus = ScheduleStatus.AVAILABLE,
     val assignedTourName: String? = null
-)
-
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-
-val mockGuideAccounts = listOf(
-    GuideAccount(
-        username = "guide123",
-        password = "guide123",
-        name = "Minh Quân",
-        handle = "@minhquan_guide",
-        phone = "+84 912 345 678",
-        rating = 4.9f,
-        totalTours = 128,
-        specialty = "Đông Nam Á · Biển đảo"
-    )
-)
-
-val mockGuideTours = listOf(
-    GuideTour(
-        id = "THA-2026-001",
-        name = "Bangkok - Pattaya 5N4Đ",
-        destination = "Grand Palace",
-        startDate = "01/06",
-        endDate = "05/06",
-        durationDays = 5,
-        totalCustomers = 28,
-        status = TourStatus.ONGOING,
-        imageDescription = "Thái Lan",
-        meetingPoint = "Sân bay Tân Sơn Nhất, Cửa số 2, 06:00",
-        itinerary = listOf(
-            GuideTourDay(1, "TP.HCM – Bangkok – Pattaya",
-                "Trưa: Đáp chuyến bay đến Bangkok, xe đón đoàn đi thẳng về Pattaya.\nChiều: Check-in khách sạn, đi The Sky Gallery hoặc Tutu Beach.\nTối: Ngắm hoàng hôn, uống nước dừa, nghe tiếng sóng.",
-                isCompleted = true),
-            GuideTourDay(2, "Đảo Coral – Về lại Bangkok",
-                "Sáng: Đi cano ra đảo Coral, nằm dưới tán cây đọc sách hoặc bơi lội.\nTrưa: Ăn hải sản tươi tại đảo.\nTối: Check-in khách sạn, dạo quanh khu vực hoặc ghé Rooftop Bar.",
-                isCurrent = true),
-            GuideTourDay(3, "Chậm Rãi Giữa Lòng Bangkok",
-                "Sáng: Tham quan Wat Arun (2-3 tiếng thong thả).\nTrưa: Ăn món Thái ven sông.\nChiều: Ghé The Commons (Thonglor) - không gian mở cực chill."),
-            GuideTourDay(4, "Nghệ Thuật & Tầm Nhìn",
-                "Sáng: Bảo tàng MOCA Bangkok.\nChiều: Lên sàn kính Mahanakhon Skywalk ngắm hoàng hôn và thành phố lên đèn."),
-            GuideTourDay(5, "Tạm Biệt Thái Lan",
-                "Sáng: Tự do dạo công viên Lumpini hoặc ghé tiệm cafe yêu thích.\nTrưa: Xe đưa đoàn ra sân bay về lại TP.HCM.")
-        ),
-        customers = listOf(
-            TourCustomer("C001", "Nguyễn Văn Bảo", "0901 234 567", "012345678901", "Nam", 2, 1, PaymentStatus.PAID),
-            TourCustomer("C002", "Trần Thị Mai", "0912 345 678", "034567890123", "Nữ", 2, 0, PaymentStatus.PAID, "Dị ứng hải sản"),
-            TourCustomer("C003", "Lê Hoàng Nam", "0933 456 789", "056789012345", "Nam", 1, 0, PaymentStatus.DEPOSIT),
-            TourCustomer("C004", "Phạm Thị Lan", "0944 567 890", "078901234567", "Nữ", 2, 2, PaymentStatus.PAID),
-            TourCustomer("C005", "Hoàng Minh Tuấn", "0955 678 901", "090123456789", "Nam", 1, 1, PaymentStatus.PENDING),
-            TourCustomer("C006", "Vũ Thị Hoa", "0966 789 012", "012345098765", "Nữ", 2, 0, PaymentStatus.PAID),
-            TourCustomer("C007", "Đặng Văn Cường", "0977 890 123", "034567654321", "Nam", 1, 0, PaymentStatus.PAID),
-            TourCustomer("C008", "Bùi Thị Ngọc", "0988 901 234", "056789876543", "Nữ", 2, 1, PaymentStatus.DEPOSIT, "Yêu cầu phòng tầng cao")
-        )
-    ),
-    GuideTour(
-        id = "VN-2026-042",
-        name = "Đà Nẵng - Hội An 3N2Đ",
-        destination = "Đà Nẵng · Hội An",
-        startDate = "15/06",
-        endDate = "17/06",
-        durationDays = 3,
-        totalCustomers = 32,
-        status = TourStatus.UPCOMING,
-        imageDescription = "Đà Nẵng",
-        meetingPoint = "Ga Đà Nẵng, Cửa số 1, 08:00",
-        itinerary = listOf(
-            GuideTourDay(1, "Đón Đoàn – Ngũ Hành Sơn – Hội An", "Đón khách tại ga/sân bay. Tham quan Ngũ Hành Sơn. Chiều tối đi Hội An."),
-            GuideTourDay(2, "Bà Nà Hills – Cầu Vàng", "Vui chơi tại Bà Nà Hills, check-in Cầu Vàng nổi tiếng."),
-            GuideTourDay(3, "Bán đảo Sơn Trà – Tiễn Đoàn", "Thăm Chùa Linh Ứng Bán đảo Sơn Trà, mua sắm đặc sản Chợ Hàn. Tiễn khách.")
-        ),
-        customers = listOf(
-            TourCustomer("C101", "Nguyễn Thị Thanh", "0901 111 222", "011122334455", "Nữ", 2, 0, PaymentStatus.PAID),
-            TourCustomer("C102", "Trần Văn Hùng", "0912 222 333", "033344556677", "Nam", 1, 0, PaymentStatus.PAID),
-            TourCustomer("C103", "Lý Mỹ Châu", "0933 333 444", "055566778899", "Nữ", 2, 2, PaymentStatus.DEPOSIT),
-            TourCustomer("C104", "Phan Quốc Khánh", "0944 444 555", "077788990011", "Nam", 2, 1, PaymentStatus.PENDING)
-        )
-    ),
-    GuideTour(
-        id = "IDN-2026-015",
-        name = "Bali - Thiên đường nghỉ dưỡng",
-        destination = "Bali",
-        startDate = "20/06",
-        endDate = "25/06",
-        durationDays = 6,
-        totalCustomers = 12,
-        status = TourStatus.UPCOMING,
-        imageDescription = "Bali",
-        meetingPoint = "Sân bay Tân Sơn Nhất, Cửa số 4, 07:30",
-        itinerary = listOf(
-            GuideTourDay(1, "TP.HCM – Bali – Ubud", "Bay đến Bali, xe đưa thẳng về Ubud. Check-in resort, nghỉ ngơi."),
-            GuideTourDay(2, "Khám Phá Ubud", "Sáng: Thăm Rừng Khỉ Ubud và đền Tirta Empul.\nChiều: Tham quan ruộng bậc thang Tegallalang.\nTối: Xem múa Kecak tại Uluwatu."),
-            GuideTourDay(3, "Nusa Penida", "Ngày tour đảo Nusa Penida. Thăm Kelingking Beach, Crystal Bay."),
-            GuideTourDay(4, "Seminyak & Mua Sắm", "Tự do tham quan và mua sắm tại Seminyak."),
-            GuideTourDay(5, "Tanah Lot & Spa", "Sáng: Tham quan đền Tanah Lot.\nChiều: Thư giãn spa truyền thống Bali."),
-            GuideTourDay(6, "Tạm Biệt Bali", "Tự do, bay về TP.HCM buổi chiều.")
-        ),
-        customers = listOf(
-            TourCustomer("C101", "Nguyễn Thị Thanh", "0901 111 222", "011122334455", "Nữ", 2, 0, PaymentStatus.PAID),
-            TourCustomer("C102", "Trần Văn Hùng", "0912 222 333", "033344556677", "Nam", 1, 0, PaymentStatus.PAID),
-            TourCustomer("C103", "Lý Mỹ Châu", "0933 333 444", "055566778899", "Nữ", 2, 2, PaymentStatus.DEPOSIT),
-            TourCustomer("C104", "Phan Quốc Khánh", "0944 444 555", "077788990011", "Nam", 2, 1, PaymentStatus.PENDING)
-        )
-    )
 )

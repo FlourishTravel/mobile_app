@@ -1,8 +1,8 @@
-package com.example.flourishtavelapp.data.api
+﻿package com.example.flourishtravelapp.data.api
 
-import com.example.flourishtavelapp.data.model.ApiResponseListTour
-import com.example.flourishtavelapp.data.model.ApiResponseVoid
-import com.example.flourishtavelapp.data.model.FavoriteRequest
+import com.example.flourishtravelapp.data.model.ApiResponseListTour
+import com.example.flourishtravelapp.data.model.ApiResponseVoid
+import com.example.flourishtravelapp.data.model.FavoriteRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE

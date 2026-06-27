@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+﻿package com.example.flourishtravelapp.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,10 +27,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.flourishtavelapp.R
-import com.example.flourishtavelapp.data.api.RetrofitClient
-import com.example.flourishtavelapp.data.model.TourSummaryDto
-import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtravelapp.R
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.TourSummaryDto
+import com.example.flourishtravelapp.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

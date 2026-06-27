@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.data.model
+﻿package com.example.flourishtravelapp.data.model
 
 import com.google.gson.annotations.SerializedName
 

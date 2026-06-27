@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.theme
+﻿package com.example.flourishtravelapp.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -38,7 +38,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun FlourishTavelAppTheme(
+fun flourishtravelappTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,

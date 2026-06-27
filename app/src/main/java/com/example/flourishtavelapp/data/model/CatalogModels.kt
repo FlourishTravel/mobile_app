@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.data.model
+﻿package com.example.flourishtravelapp.data.model
 
 import com.google.gson.annotations.SerializedName
 
@@ -180,4 +180,34 @@ data class ApiResponseTourDetailDto(
     @SerializedName("success") val success: Boolean,
     @SerializedName("message") val message: String?,
     @SerializedName("data") val data: TourDetailDto?
+)
+
+data class TicketCardDto(
+    @SerializedName("id") val id: String?,
+    @SerializedName("slug") val slug: String?,
+    @SerializedName("name") val name: String,
+    @SerializedName("category") val category: String?,
+    @SerializedName("destinationCity") val destinationCity: String?,
+    @SerializedName("shortDescription") val shortDescription: String?,
+    @SerializedName("imageUrl") val imageUrl: String?,
+    @SerializedName("priceVnd") val priceVnd: Double?,
+    @SerializedName("priceLabel") val priceLabel: String?,
+    @SerializedName("rating") val rating: Double?,
+    @SerializedName("showTimeLabel") val showTimeLabel: String?,
+    @SerializedName("locationLabel") val locationLabel: String?,
+    @SerializedName("routeLabel") val routeLabel: String?,
+    @SerializedName("eTicket") val eTicket: Boolean?,
+    @SerializedName("featured") val featured: Boolean?
+)
+
+data class ApiResponseListTicketCard(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: List<TicketCardDto>?
+)
+
+data class ApiResponseTicketCard(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: TicketCardDto?
 )

@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+﻿package com.example.flourishtravelapp.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,15 +55,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.flourishtavelapp.data.api.RetrofitClient
-import com.example.flourishtavelapp.data.model.ChatbotRequest
-import com.example.flourishtavelapp.data.model.ChatbotTourCard
-import com.example.flourishtavelapp.data.session.SessionManager
-import com.example.flourishtavelapp.ui.theme.DarkTextColor
-import com.example.flourishtavelapp.ui.theme.LightGreenBackground
-import com.example.flourishtavelapp.ui.theme.NatureGreenBackground
-import com.example.flourishtavelapp.ui.theme.PrimaryGreen
-import com.example.flourishtavelapp.ui.theme.SecondaryTextColor
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.ChatbotRequest
+import com.example.flourishtravelapp.data.model.ChatbotTourCard
+import com.example.flourishtravelapp.data.session.SessionManager
+import com.example.flourishtravelapp.ui.theme.DarkTextColor
+import com.example.flourishtravelapp.ui.theme.LightGreenBackground
+import com.example.flourishtravelapp.ui.theme.NatureGreenBackground
+import com.example.flourishtravelapp.ui.theme.PrimaryGreen
+import com.example.flourishtravelapp.ui.theme.SecondaryTextColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

@@ -1,7 +1,7 @@
-package com.example.flourishtavelapp.data.preferences
+﻿package com.example.flourishtravelapp.data.preferences
 
-import com.example.flourishtavelapp.data.model.TravelPreferencesDto
-import com.example.flourishtavelapp.data.model.UpdateTravelPreferencesRequest
+import com.example.flourishtravelapp.data.model.TravelPreferencesDto
+import com.example.flourishtravelapp.data.model.UpdateTravelPreferencesRequest
 
 /**
  * Builds PATCH body from UI draft. Backend applies partial updates per non-null field.

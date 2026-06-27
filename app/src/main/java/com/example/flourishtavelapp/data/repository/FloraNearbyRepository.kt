@@ -1,9 +1,9 @@
-package com.example.flourishtavelapp.data.repository
+﻿package com.example.flourishtravelapp.data.repository
 
-import com.example.flourishtavelapp.data.api.FloraApiService
-import com.example.flourishtavelapp.data.model.FloraNearbyRecommendationRequest
-import com.example.flourishtavelapp.data.model.FloraNearbyRecommendationResponse
-import com.example.flourishtavelapp.location.NearbyLocationPolicy
+import com.example.flourishtravelapp.data.api.FloraApiService
+import com.example.flourishtravelapp.data.model.FloraNearbyRecommendationRequest
+import com.example.flourishtravelapp.data.model.FloraNearbyRecommendationResponse
+import com.example.flourishtravelapp.location.NearbyLocationPolicy
 import java.io.IOException
 
 class FloraNearbyRepository(

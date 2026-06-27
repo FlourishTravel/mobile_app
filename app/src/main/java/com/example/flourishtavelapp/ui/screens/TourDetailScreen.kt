@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+﻿package com.example.flourishtravelapp.ui.screens
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -30,10 +30,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.flourishtavelapp.R
-import com.example.flourishtavelapp.data.api.RetrofitClient
-import com.example.flourishtavelapp.data.model.*
-import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtravelapp.R
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.*
+import com.example.flourishtravelapp.ui.theme.*
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)

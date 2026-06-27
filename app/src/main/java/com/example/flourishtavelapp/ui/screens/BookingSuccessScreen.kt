@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+﻿package com.example.flourishtravelapp.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtravelapp.ui.theme.*
 
 @Composable
 fun BookingSuccessScreen(
@@ -125,7 +125,7 @@ fun BookingSuccessScreen(
                 ) {
                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Image(
-                            painter = painterResource(id = com.example.flourishtavelapp.R.drawable.maya_bg),
+                            painter = painterResource(id = com.example.flourishtravelapp.R.drawable.maya_bg),
                             contentDescription = null,
                             modifier = Modifier.size(80.dp).clip(RoundedCornerShape(20.dp)),
                             contentScale = ContentScale.Crop

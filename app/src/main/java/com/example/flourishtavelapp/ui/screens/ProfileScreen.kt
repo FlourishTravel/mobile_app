@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import android.net.Uri
 import android.widget.Toast
@@ -31,14 +31,14 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.flourishtavelapp.ui.theme.*
-import com.example.flourishtavelapp.data.api.RetrofitClient
-import com.example.flourishtavelapp.push.LogoutCoordinator
-import com.example.flourishtavelapp.data.api.FileUtils
-import com.example.flourishtavelapp.data.model.ChangePasswordRequest
-import com.example.flourishtavelapp.data.model.UpdateProfileRequest
-import com.example.flourishtavelapp.data.model.UserInfo
-import com.example.flourishtavelapp.data.session.SessionManager
+import com.example.flourishtravelapp.ui.theme.*
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.push.LogoutCoordinator
+import com.example.flourishtravelapp.data.api.FileUtils
+import com.example.flourishtravelapp.data.model.ChangePasswordRequest
+import com.example.flourishtravelapp.data.model.UpdateProfileRequest
+import com.example.flourishtravelapp.data.model.UserInfo
+import com.example.flourishtravelapp.data.session.SessionManager
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -57,7 +57,8 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit,
     onLogout: () -> Unit,
-    onFloraSettingsClick: () -> Unit = {}
+    onFloraSettingsClick: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {}
 ) {
     // Intercept back press to return to Homepage
     BackHandler {
@@ -517,10 +518,7 @@ fun ProfileScreen(
                         icon = Icons.Outlined.Notifications,
                         title = "Thông báo",
                         rightText = if (tempNotification) "Bật" else "Tắt",
-                        onClick = {
-                            tempNotification = !tempNotification
-                            onProfileUpdate(currentName, currentHandle, currentEmail, currentPhone, currentAddress, tempNotification)
-                        }
+                        onClick = { onNotificationsClick() }
                     )
 
                     Row(

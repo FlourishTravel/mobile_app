@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.components
+﻿package com.example.flourishtravelapp.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -6,8 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -21,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtravelapp.ui.theme.*
 
 @Composable
 fun FeatureCard(icon: ImageVector, title: String, description: String) {
@@ -160,21 +159,23 @@ fun SmallCuratedCard(modifier: Modifier, icon: ImageVector, title: String, iconC
     }
 }
 
+private data class BottomNavItem(
+    val label: String,
+    val outlined: ImageVector,
+    val filled: ImageVector
+)
+
 @Composable
-fun FlourishBottomNavigation(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+private fun FlourishStyleBottomNavigation(
+    items: List<BottomNavItem>,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit
+) {
     NavigationBar(
         containerColor = Color.White,
         tonalElevation = 8.dp,
         modifier = Modifier.height(80.dp)
     ) {
-        val items = listOf(
-            Triple("Trang chủ", Icons.Outlined.Home, Icons.Outlined.Home),
-            Triple("Chuyến đi", Icons.Outlined.Luggage, Icons.Outlined.Luggage),
-            Triple("Trợ lý AI", Icons.Outlined.SmartToy, Icons.Outlined.SmartToy),
-            Triple("Khám phá", Icons.Outlined.Explore, Icons.Outlined.Explore),
-            Triple("Hồ sơ", Icons.Outlined.Person, Icons.Outlined.Person)
-        )
-
         items.forEachIndexed { index, item ->
             val isSelected = selectedTab == index
             NavigationBarItem(
@@ -191,27 +192,58 @@ fun FlourishBottomNavigation(selectedTab: Int, onTabSelected: (Int) -> Unit) {
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = item.second,
-                            contentDescription = item.first,
+                            imageVector = if (isSelected) item.filled else item.outlined,
+                            contentDescription = item.label,
                             tint = if (isSelected) NavSelectedIcon else SecondaryTextColor,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 },
                 label = {
                     Text(
-                        text = item.first,
+                        text = item.label,
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             fontSize = 10.sp
                         ),
-                        color = if (isSelected) NavSelectedIcon else SecondaryTextColor
+                        color = if (isSelected) NavSelectedIcon else SecondaryTextColor,
+                        maxLines = 1
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
             )
         }
     }
+}
+
+@Composable
+fun FlourishBottomNavigation(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+    FlourishStyleBottomNavigation(
+        items = listOf(
+            BottomNavItem("Trang chủ", Icons.Outlined.Home, Icons.Filled.Home),
+            BottomNavItem("Chuyến đi", Icons.Outlined.Luggage, Icons.Filled.Luggage),
+            BottomNavItem("Trợ lý AI", Icons.Outlined.SmartToy, Icons.Filled.SmartToy),
+            BottomNavItem("Khám phá", Icons.Outlined.Explore, Icons.Filled.Explore),
+            BottomNavItem("Hồ sơ", Icons.Outlined.Person, Icons.Filled.Person)
+        ),
+        selectedTab = selectedTab,
+        onTabSelected = onTabSelected
+    )
+}
+
+@Composable
+fun GuideBottomNavigation(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+    FlourishStyleBottomNavigation(
+        items = listOf(
+            BottomNavItem("Trang chủ", Icons.Outlined.Home, Icons.Filled.Home),
+            BottomNavItem("Tour", Icons.Outlined.Map, Icons.Filled.Map),
+            BottomNavItem("Đoàn", Icons.Outlined.Groups, Icons.Filled.Groups),
+            BottomNavItem("Vận hành", Icons.Outlined.Engineering, Icons.Filled.Engineering),
+            BottomNavItem("Hồ sơ", Icons.Outlined.Person, Icons.Filled.Person)
+        ),
+        selectedTab = selectedTab,
+        onTabSelected = onTabSelected
+    )
 }
 
 @Composable

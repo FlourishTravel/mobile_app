@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -12,9 +12,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.AirplaneTicket
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -23,15 +23,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.R
-import com.example.flourishtavelapp.ui.theme.*
+import coil.compose.AsyncImage
+import com.example.flourishtravelapp.R
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.mapper.categoryLabelToApiParam
+import com.example.flourishtravelapp.data.mapper.toTravelActivity
+import com.example.flourishtravelapp.ui.theme.*
 
 data class ActivityCategory(
     val id: String,
@@ -40,6 +46,8 @@ data class ActivityCategory(
 )
 
 data class TravelActivity(
+    val id: String?,
+    val slug: String?,
     val title: String,
     val location: String,
     val rating: String,
@@ -49,156 +57,112 @@ data class TravelActivity(
     val originalPrice: String?,
     val promoText: String?,
     val badge: String?,
+    val imageUrl: String?,
     val imageRes: Int,
     val categoryId: String,
-    val keyword: String // Keyword to match homepage click
+    val keyword: String,
+    val showTimeLabel: String?,
+    val routeLabel: String?
 )
+
+private val WEB_ACTIVITY_CATEGORIES = listOf(
+    ActivityCategory("all", "Tất cả", Icons.Outlined.Apps),
+    ActivityCategory("attraction", "Điểm tham quan", Icons.Outlined.Landscape),
+    ActivityCategory("show", "Show & vui chơi", Icons.Outlined.TheaterComedy),
+    ActivityCategory("transport", "Di chuyển", Icons.Outlined.DirectionsBus)
+)
+
+private val NON_DESTINATION_LABELS = setOf(
+    "Tất cả",
+    "Điểm tham quan",
+    "Show & vui chơi",
+    "Di chuyển",
+    "Visa",
+    "Transport",
+    "Currency",
+    "Weather",
+    "HẠ GIÁ!"
+)
+
+private fun initialCategoryFromLabel(label: String): String = when {
+    label.equals("Transport", ignoreCase = true) -> "Di chuyển"
+    label.equals("Điểm tham quan", ignoreCase = true) -> "Điểm tham quan"
+    label.contains("Show", ignoreCase = true) || label.contains("vui chơi", ignoreCase = true) -> "Show & vui chơi"
+    label.equals("Di chuyển", ignoreCase = true) -> "Di chuyển"
+    else -> "Tất cả"
+}
+
+private fun initialSearchFromLabel(label: String): String =
+    if (label.isNotBlank() && !NON_DESTINATION_LABELS.any { it.equals(label, ignoreCase = true) }) {
+        label
+    } else {
+        ""
+    }
+
+private fun destinationApiParam(searchQuery: String): String? {
+    val trimmed = searchQuery.trim()
+    if (trimmed.isBlank()) return null
+    if (NON_DESTINATION_LABELS.any { it.equals(trimmed, ignoreCase = true) }) return null
+    return trimmed
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivitiesScreen(
     initialCategoryLabel: String,
     onBack: () -> Unit,
-    onActivityClick: () -> Unit,
+    onActivityClick: (TravelActivity) -> Unit,
     modifier: Modifier = Modifier
 ) {
     BackHandler {
         onBack()
     }
-    // Basic Category List
-    val defaultCategories = remember {
-        mutableStateListOf(
-            ActivityCategory("discount", "HẠ GIÁ!", Icons.Outlined.LocalActivity),
-            ActivityCategory("attraction", "Điểm tham quan", Icons.Outlined.Landscape),
-            ActivityCategory("park", "Công viên giải trí", Icons.Outlined.Festival),
-            ActivityCategory("sim", "Sim và Wifi", Icons.Outlined.Wifi),
-            ActivityCategory("visa", "Visa", Icons.AutoMirrored.Outlined.AirplaneTicket),
-            ActivityCategory("transport", "Transport", Icons.Outlined.DirectionsBus),
-            ActivityCategory("currency", "Currency", Icons.Outlined.CurrencyExchange),
-            ActivityCategory("weather", "Weather", Icons.Outlined.Cloud)
-        )
+
+    val categories = remember { WEB_ACTIVITY_CATEGORIES }
+
+    var selectedCategory by remember(initialCategoryLabel) {
+        mutableStateOf(initialCategoryFromLabel(initialCategoryLabel))
+    }
+    var searchQuery by remember(initialCategoryLabel) {
+        mutableStateOf(initialSearchFromLabel(initialCategoryLabel))
     }
 
-    // Rearrange category list so that the clicked one is at the first position
-    val categories = remember(initialCategoryLabel) {
-        val targetIndex = defaultCategories.indexOfFirst { it.label.equals(initialCategoryLabel, ignoreCase = true) }
-        if (targetIndex != -1) {
-            val newList = ArrayList(defaultCategories)
-            val selectedItem = newList.removeAt(targetIndex)
-            newList.add(0, selectedItem)
-            newList
-        } else {
-            val newList = ArrayList(defaultCategories)
-            if (initialCategoryLabel.isNotEmpty() && !defaultCategories.any { it.label.equals(initialCategoryLabel, ignoreCase = true) }) {
-                newList.add(0, ActivityCategory("region", initialCategoryLabel, Icons.Outlined.LocationOn))
+    var rawActivities by remember { mutableStateOf<List<TravelActivity>>(emptyList()) }
+    var isLoadingActivities by remember { mutableStateOf(true) }
+    var activitiesError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(selectedCategory, searchQuery) {
+        isLoadingActivities = true
+        activitiesError = null
+        try {
+            val response = RetrofitClient.catalogApiService.getTickets(
+                category = categoryLabelToApiParam(selectedCategory),
+                destination = destinationApiParam(searchQuery)
+            )
+            if (response.isSuccessful && response.body()?.success == true) {
+                rawActivities = response.body()?.data.orEmpty().map { it.toTravelActivity() }
+            } else {
+                activitiesError = response.body()?.message ?: "Không tải được hoạt động"
+                rawActivities = emptyList()
             }
-            newList
+        } catch (e: Exception) {
+            activitiesError = e.localizedMessage ?: "Lỗi kết nối"
+            rawActivities = emptyList()
+        } finally {
+            isLoadingActivities = false
         }
     }
 
-    var selectedCategory by remember { mutableStateOf(categories.firstOrNull()?.label ?: "HẠ GIÁ!") }
-    var searchQuery by remember { mutableStateOf(if (initialCategoryLabel.isNotEmpty()) initialCategoryLabel else "Singapore") }
-
-    val rawActivities = remember {
-        listOf(
-            TravelActivity(
-                title = "Vé vào cổng Universal Studios Singapore | Resorts World Sentosa",
-                location = "Singapore",
-                rating = "4.6",
-                reviewCount = "5.546",
-                bookedCount = "52k+",
-                price = "206.163 đ",
-                originalPrice = "320.000 đ",
-                promoText = "Dùng FORYOU để tiết kiệm 10.308,00 đ",
-                badge = "Được bán 84 lần trong 24 tiếng qua",
-                imageRes = R.drawable.travel_bg,
-                categoryId = "park",
-                keyword = "Singapore"
-            ),
-            TravelActivity(
-                title = "Vé tham quan Wat Arun (Chùa Bình Minh) & Trải nghiệm Cổ phục Thái Lan",
-                location = "Bangkok, Thái Lan",
-                rating = "4.9",
-                reviewCount = "12.430",
-                bookedCount = "100k+",
-                price = "150.000 đ",
-                originalPrice = "220.000 đ",
-                promoText = "Dùng THAILANDCHILL để giảm 20.000 đ",
-                badge = "Bán chạy nhất hôm nay",
-                imageRes = R.drawable.awat_bg,
-                categoryId = "attraction",
-                keyword = "Bangkok"
-            ),
-            TravelActivity(
-                title = "Vé vào cửa Singapore Oceanarium – Resorts World Sentosa",
-                location = "Singapore",
-                rating = "4.6",
-                reviewCount = "1.393",
-                bookedCount = "6.3k+",
-                price = "57.726 đ",
-                originalPrice = "90.000 đ",
-                promoText = "Dùng FORYOU để tiết kiệm 2.886,00 đ",
-                badge = "Được bán 10 lần trong 24 tiếng qua",
-                imageRes = R.drawable.chaoriver_bg,
-                categoryId = "park",
-                keyword = "Singapore"
-            ),
-            TravelActivity(
-                title = "Tour Ngày Đi Đảo Phi Phi & Vịnh Maya Bằng Tàu Siêu Tốc Cao Cấp",
-                location = "Phuket/Krabi, Thái Lan",
-                rating = "4.8",
-                reviewCount = "8.450",
-                bookedCount = "40k+",
-                price = "950.000 đ",
-                originalPrice = "1.250.000 đ",
-                promoText = "Hủy miễn phí trong 24h",
-                badge = "Lựa chọn tuyệt vời",
-                imageRes = R.drawable.maya_bg,
-                categoryId = "attraction",
-                keyword = "Phi Phi"
-            ),
-            TravelActivity(
-                title = "Tour Khám Phá Chiang Mai Cổ Kính & Chùa Vàng Doi Suthep",
-                location = "Chiang Mai, Thái Lan",
-                rating = "4.9",
-                reviewCount = "5.120",
-                bookedCount = "25k+",
-                price = "650.000 đ",
-                originalPrice = "800.000 đ",
-                promoText = "Khám phá văn hoá tâm linh đặc sắc",
-                badge = "Được đánh giá cao nhất",
-                imageRes = R.drawable.chiangmai_bg,
-                categoryId = "attraction",
-                keyword = "Chiang Mai"
-            ),
-            TravelActivity(
-                title = "Sim 4G Thái Lan Nhận Tại Sân Bay Suvarnabhumi (BKK) / Don Mueang",
-                location = "Bangkok, Thái Lan",
-                rating = "4.7",
-                reviewCount = "32.100",
-                bookedCount = "200k+",
-                price = "120.000 đ",
-                originalPrice = "180.000 đ",
-                promoText = "Kết nối tốc độ cao không giới hạn",
-                badge = "Tiện lợi & Bắt buộc có",
-                imageRes = R.drawable.travel_bg,
-                categoryId = "sim",
-                keyword = "Sim"
-            )
-        )
-    }
-
-    // Sort list so that the activity matching initialCategoryLabel is at the first position
-    val activities = remember(initialCategoryLabel) {
+    val activities = remember(initialCategoryLabel, rawActivities) {
         if (initialCategoryLabel.isEmpty()) {
             rawActivities
         } else {
             val newList = ArrayList(rawActivities)
             val matchedIndex = newList.indexOfFirst {
                 it.keyword.contains(initialCategoryLabel, ignoreCase = true) ||
-                initialCategoryLabel.contains(it.keyword, ignoreCase = true) ||
-                it.title.contains(initialCategoryLabel, ignoreCase = true) ||
-                it.location.contains(initialCategoryLabel, ignoreCase = true)
+                    initialCategoryLabel.contains(it.keyword, ignoreCase = true) ||
+                    it.title.contains(initialCategoryLabel, ignoreCase = true) ||
+                    it.location.contains(initialCategoryLabel, ignoreCase = true)
             }
             if (matchedIndex != -1) {
                 val matchedItem = newList.removeAt(matchedIndex)
@@ -214,7 +178,6 @@ fun ActivitiesScreen(
             .background(Color.White)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // ── Top Bar: Back + "Hoạt động" + Favorite ──
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -244,14 +207,12 @@ fun ActivitiesScreen(
                 }
             }
 
-            // ── Search & Filter Row ──
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Search bar
                 Surface(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(24.dp),
@@ -268,15 +229,30 @@ fun ActivitiesScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = searchQuery,
-                            color = DarkTextColor,
-                            fontSize = 14.sp
+                        BasicTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.weight(1f),
+                            textStyle = TextStyle(
+                                color = DarkTextColor,
+                                fontSize = 14.sp
+                            ),
+                            singleLine = true,
+                            cursorBrush = SolidColor(PrimaryGreen),
+                            decorationBox = { inner ->
+                                if (searchQuery.isEmpty()) {
+                                    Text(
+                                        "Tìm điểm đến…",
+                                        color = SecondaryTextColor,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                                inner()
+                            }
                         )
                     }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                // Filter button
                 Surface(
                     modifier = Modifier.clickable { },
                     shape = RoundedCornerShape(24.dp),
@@ -306,7 +282,6 @@ fun ActivitiesScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // ── Horizontal Categories Row ──
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 20.dp),
@@ -345,20 +320,42 @@ fun ActivitiesScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ── Activity List ──
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(bottom = 20.dp)
-            ) {
-                itemsIndexed(activities) { index, act ->
-                    val isFeatured = index == 0
-                    ActivityListItem(
-                        activity = act,
-                        isFeatured = isFeatured,
-                        onClick = onActivityClick
-                    )
+            if (isLoadingActivities) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = PrimaryGreen)
+                }
+            } else if (activitiesError != null) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(activitiesError ?: "", color = Color(0xFFC62828))
+                }
+            } else if (activities.isEmpty()) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Không có hoạt động phù hợp.", color = SecondaryTextColor)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(bottom = 20.dp)
+                ) {
+                    itemsIndexed(activities) { index, act ->
+                        val isFeatured = index == 0
+                        ActivityListItem(
+                            activity = act,
+                            isFeatured = isFeatured,
+                            onClick = { onActivityClick(act) }
+                        )
+                    }
                 }
             }
         }
@@ -388,7 +385,6 @@ fun ActivityListItem(
         elevation = CardDefaults.cardElevation(defaultElevation = if (isFeatured) 3.dp else 1.dp)
     ) {
         Column {
-            // Blue header bar for the featured element (Lựa chọn tuyệt vời)
             if (isFeatured) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -423,25 +419,33 @@ fun ActivityListItem(
                 }
             }
 
-            // Card content
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(10.dp)
             ) {
-                // Image
                 Box(
                     modifier = Modifier
                         .size(110.dp)
                         .clip(RoundedCornerShape(8.dp))
                 ) {
-                    Image(
-                        painter = painterResource(id = activity.imageRes),
-                        contentDescription = activity.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                    // Heart icon
+                    if (!activity.imageUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = activity.imageUrl,
+                            contentDescription = activity.title,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            placeholder = painterResource(id = activity.imageRes),
+                            error = painterResource(id = activity.imageRes)
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = activity.imageRes),
+                            contentDescription = activity.title,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                     Surface(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -463,7 +467,6 @@ fun ActivityListItem(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Details
                 Column(modifier = Modifier.weight(1f)) {
                     if (activity.badge != null) {
                         Surface(
@@ -490,6 +493,35 @@ fun ActivityListItem(
                         overflow = TextOverflow.Ellipsis,
                         lineHeight = 17.sp
                     )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            null,
+                            tint = SecondaryTextColor,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = activity.location,
+                            color = SecondaryTextColor,
+                            fontSize = 10.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    activity.showTimeLabel?.takeIf { it.isNotBlank() }?.let { timeLabel ->
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(timeLabel, color = SecondaryTextColor, fontSize = 10.sp)
+                    }
+
+                    activity.routeLabel?.takeIf { it.isNotBlank() }?.let { route ->
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(route, color = SecondaryTextColor, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
 
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -523,7 +555,9 @@ fun ActivityListItem(
                                 text = activity.promoText,
                                 color = Color(0xFF388E3C),
                                 fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }

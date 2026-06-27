@@ -1,7 +1,7 @@
-package com.example.flourishtavelapp.data.api
+﻿package com.example.flourishtravelapp.data.api
 
-import com.example.flourishtavelapp.data.model.CreateReviewApiResponse
-import com.example.flourishtavelapp.data.model.CreateReviewRequest
+import com.example.flourishtravelapp.data.model.CreateReviewApiResponse
+import com.example.flourishtravelapp.data.model.CreateReviewRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST

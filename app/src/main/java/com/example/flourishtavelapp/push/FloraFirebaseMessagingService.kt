@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.push
+﻿package com.example.flourishtravelapp.push
 
 import android.content.Context
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -17,7 +17,7 @@ class FloraFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     override fun onNewToken(token: String) {
-        val sessionManager = com.example.flourishtavelapp.data.session.SessionManager(this)
+        val sessionManager = com.example.flourishtravelapp.data.session.SessionManager(this)
         if (!sessionManager.isLoggedIn()) return
         sessionManager.saveFcmToken(token)
         // Token sync runs on next settings open or explicit sync — avoids background network without consent check

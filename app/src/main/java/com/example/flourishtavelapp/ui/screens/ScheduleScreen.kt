@@ -1,13 +1,15 @@
-package com.example.flourishtavelapp.ui.screens
+﻿package com.example.flourishtravelapp.ui.screens
 
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
-import com.example.flourishtavelapp.data.api.RetrofitClient
-import com.example.flourishtavelapp.data.model.BookingSummary
-import com.example.flourishtavelapp.data.model.Tour
-import com.example.flourishtavelapp.data.model.FavoriteRequest
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.BookingSummary
+import com.example.flourishtravelapp.data.model.Tour
+import com.example.flourishtravelapp.data.model.FavoriteRequest
 import kotlinx.coroutines.launch
-import com.example.flourishtavelapp.R
+import com.example.flourishtravelapp.data.model.UserBookingDetailDto
+import com.example.flourishtravelapp.data.mapper.toDayPlans
+import com.example.flourishtravelapp.R
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -53,10 +55,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
-import com.example.flourishtavelapp.ui.components.FloraJourneyPanel
-import com.example.flourishtavelapp.ui.components.FloraPostTourFeedbackPanel
-import com.example.flourishtavelapp.ui.components.rememberFloraJourneyState
-import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtravelapp.ui.components.FloraJourneyPanel
+import com.example.flourishtravelapp.ui.components.FloraPostTourFeedbackPanel
+import com.example.flourishtravelapp.ui.components.rememberFloraJourneyState
+import com.example.flourishtravelapp.ui.theme.*
 
 // Mock model for our tours
 data class TourItem(
@@ -115,159 +117,21 @@ data class DayPlan(
     val activities: List<ActivityItem>
 )
 
-// --- Mock Itineraries ---
-val mockThailandItinerary = listOf(
-    DayPlan(
-        dayNumber = 1,
-        dayTitle = "Ngày 1: Bangkok",
-        daySubtitle = "Chào mừng bạn đến với thủ đô rực rỡ.",
-        activities = listOf(
-            ActivityItem(
-                id = "t1_act1",
-                title = "Nhận phòng khách sạn 5* tại trung tâm",
-                status = ActivityStatus.Completed,
-                description = "Trải nghiệm không gian sang trọng và tiện nghi bậc nhất ngay tại trung tâm thủ đô Bangkok, giúp quý khách thư giãn sau chuyến bay dài.",
-                imageRes = com.example.flourishtavelapp.R.drawable.travel_bg
-            ),
-            ActivityItem(
-                id = "t1_act2",
-                title = "Dạo thuyền trên sông Chao Phraya",
-                status = ActivityStatus.Completed,
-                description = "Dòng sông huyền thoại chảy qua lòng Bangkok, nơi bạn có thể ngắm nhìn các ngôi chùa cổ kính và nhịp sống sôi động hai bên bờ khi hoàng hôn buông xuống.",
-                imageRes = com.example.flourishtavelapp.R.drawable.chaoriver_bg
-            ),
-            ActivityItem(
-                id = "t1_act3",
-                title = "Thưởng thức buffet tối phong cách hoàng gia",
-                status = ActivityStatus.Current,
-                description = "Thưởng thức tinh hoa ẩm thực Thái Lan với hàng trăm món ăn truyền thống và quốc tế được chế biến bởi các đầu bếp hàng đầu trong không gian cung đình sang trọng.",
-                imageRes = com.example.flourishtavelapp.R.drawable.joddfairs_bg
-            )
-        )
-    ),
-    DayPlan(
-        dayNumber = 2,
-        dayTitle = "Ngày 2: Di sản",
-        daySubtitle = "Khám phá chiều sâu lịch sử chùa tháp.",
-        activities = listOf(
-            ActivityItem(
-                id = "t1_act4",
-                title = "Tham quan Chùa Cung Điện Hoàng Gia Wat Phra Kaew",
-                status = ActivityStatus.Upcoming,
-                description = "Wat Phra Kaew là ngôi chùa nổi tiếng và linh thiêng nhất tại Thái Lan, nơi lưu giữ bức tượng Phật Ngọc quý giá của vương triều.",
-                imageRes = com.example.flourishtavelapp.R.drawable.awat_bg
-            ),
-            ActivityItem(
-                id = "t1_act5",
-                title = "Khám phá Wat Arun - Chùa Bình Minh",
-                status = ActivityStatus.Upcoming,
-                description = "Ngôi chùa cổ kính và lộng lẫy nằm bên bờ sông Chao Phraya, biểu tượng tâm linh và kiến trúc độc đáo bậc nhất của thủ đô Bangkok.",
-                imageRes = com.example.flourishtavelapp.R.drawable.awat_bg
-            )
-        )
-    ),
-    DayPlan(
-        dayNumber = 3,
-        dayTitle = "Ngày 3: Chiang Mai",
-        daySubtitle = "Vùng đất bình yên ẩm mình giữa rừng núi.",
-        activities = listOf(
-            ActivityItem(
-                id = "t1_act6",
-                title = "Ghé thăm Chùa Wat Phra That Doi Suthep",
-                status = ActivityStatus.Upcoming,
-                description = "Ngôi chùa thiêng liêng nằm trên đỉnh núi Doi Suthep, từ đây bạn có thể phóng tầm mắt ngắm toàn cảnh thung lũng Chiang Mai mộng mơ.",
-                imageRes = com.example.flourishtavelapp.R.drawable.chiangmai_bg
-            ),
-            ActivityItem(
-                id = "t1_act7",
-                title = "Trải nghiệm khu làng voi thân thiện nhân đạo",
-                status = ActivityStatus.Upcoming,
-                description = "Tìm hiểu đời sống loài voi tại trung tâm bảo tồn, cùng tắm voi và làm thức ăn cho voi một cách nhân văn, bền vững.",
-                imageRes = com.example.flourishtavelapp.R.drawable.travel_bg
-            )
-        )
-    ),
-    DayPlan(
-        dayNumber = 4,
-        dayTitle = "Ngày 4: Thiên nhiên",
-        daySubtitle = "Hòa mình cùng biển cả xanh ngắt nhiệt đới.",
-        activities = listOf(
-            ActivityItem(
-                id = "t1_act8",
-                title = "Tắm biển và lặn ngắm san hô tại đảo Phi Phi",
-                status = ActivityStatus.Upcoming,
-                description = "Hòa mình vào làn nước trong vắt nhìn thấy đáy, khám phá các rặng san hô đa sắc màu cùng hàng ngàn loài sinh vật biển kỳ thú.",
-                imageRes = com.example.flourishtavelapp.R.drawable.phiphi_bg
-            )
-        )
-    )
-)
-
-val mockPhiPhiItinerary = listOf(
-    DayPlan(
-        dayNumber = 1,
-        dayTitle = "Ngày 1: Khởi hành & Di chuyển đến đảo",
-        daySubtitle = "Bắt đầu hành trình đến thiên đường biển cả.",
-        activities = listOf(
-            ActivityItem(
-                id = "t2_act1",
-                title = "Đón khách tại khách sạn ở Phuket ra bến tàu",
-                status = ActivityStatus.Completed,
-                description = "Xe du lịch chất lượng cao đón quý khách tại khách sạn trong khu vực Patong/Karon ra bến cảng khởi hành.",
-                imageRes = com.example.flourishtavelapp.R.drawable.phuket_bg
-            ),
-            ActivityItem(
-                id = "t2_act2",
-                title = "Lên tàu cao tốc Speedboat di chuyển ra quần đảo Phi Phi",
-                status = ActivityStatus.Completed,
-                description = "Trải nghiệm tàu cao tốc cực nhanh lướt sóng qua vịnh biển xanh ngắt, đón những luồng gió biển sảng khoái.",
-                imageRes = com.example.flourishtavelapp.R.drawable.phiphi_bg
-            )
-        )
-    ),
-    DayPlan(
-        dayNumber = 2,
-        dayTitle = "Ngày 2: Lặn ngắm san hô & Trải nghiệm vịnh Maya",
-        daySubtitle = "Khám phá thế giới đại dương rực rỡ sắc màu.",
-        activities = listOf(
-            ActivityItem(
-                id = "t2_act3",
-                title = "Lặn biển snorkeling tại vịnh Loh Samah",
-                status = ActivityStatus.Current,
-                description = "Đắm mình vào làn nước ấm áp, trang bị kính lặn và ống thở để ngắm nhìn trực tiếp các rặng san hô tự nhiên cùng đàn cá hề bơi lượn.",
-                imageRes = com.example.flourishtavelapp.R.drawable.phiphi_bg
-            ),
-            ActivityItem(
-                id = "t2_act4",
-                title = "Thăm vịnh Maya - Thiên đường ẩn giấu",
-                status = ActivityStatus.Upcoming,
-                description = "Bãi biển nổi tiếng thế giới với những vách núi đá vôi dựng đứng bao bọc bãi cát trắng mịn màng như bột phấn.",
-                imageRes = com.example.flourishtavelapp.R.drawable.maya_bg
-            ),
-            ActivityItem(
-                id = "t2_act5",
-                title = "Ăn trưa buffet hải sản trên đảo Phi Phi Don",
-                status = ActivityStatus.Upcoming,
-                description = "Thưởng thức tiệc buffet thịnh soạn tại nhà hàng sát biển với các món hải sản nướng tươi sống, đồ uống mát lạnh.",
-                imageRes = com.example.flourishtavelapp.R.drawable.joddfairs_bg
-            )
-        )
-    )
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
     modifier: Modifier = Modifier, 
     onBack: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onOpenGroupChat: (String) -> Unit = {}
 ) {
     var selectedBookedTourForDetail by remember { mutableStateOf<TourItem?>(null) }
 
     if (selectedBookedTourForDetail != null) {
         DetailedItineraryScreen(
             tour = selectedBookedTourForDetail!!,
-            onBack = { selectedBookedTourForDetail = null }
+            onBack = { selectedBookedTourForDetail = null },
+            onOpenGroupChat = onOpenGroupChat
         )
     } else {
         TripsMainListScreen(
@@ -839,12 +703,53 @@ fun TripsMainListScreen(
 @Composable
 fun DetailedItineraryScreen(
     tour: TourItem,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenGroupChat: (String) -> Unit = {}
 ) {
-    val dayPlans = when (tour.catalogTourId) {
-        "4" -> mockThailandItinerary
-        "5" -> mockPhiPhiItinerary
-        else -> emptyList()
+    val catalogId = tour.catalogTourId
+    var dayPlans by remember(catalogId) { mutableStateOf<List<DayPlan>>(emptyList()) }
+    var isLoadingItinerary by remember(catalogId) { mutableStateOf(!catalogId.isNullOrBlank()) }
+    var itineraryError by remember(catalogId) { mutableStateOf<String?>(null) }
+    var bookingDetail by remember { mutableStateOf<UserBookingDetailDto?>(null) }
+
+    LaunchedEffect(tour.id) {
+        if (tour.isBooked && isUuid(tour.id)) {
+            try {
+                val response = RetrofitClient.bookingApiService.getBookingDetail(tour.id)
+                if (response.isSuccessful) {
+                    bookingDetail = response.body()?.data
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else {
+            bookingDetail = null
+        }
+    }
+
+    LaunchedEffect(catalogId) {
+        if (catalogId.isNullOrBlank()) {
+            dayPlans = emptyList()
+            itineraryError = null
+            isLoadingItinerary = false
+            return@LaunchedEffect
+        }
+        isLoadingItinerary = true
+        itineraryError = null
+        try {
+            val response = RetrofitClient.bookingApiService.getTourDetail(catalogId)
+            if (response.isSuccessful) {
+                dayPlans = response.body()?.data?.toDayPlans() ?: emptyList()
+            } else {
+                dayPlans = emptyList()
+                itineraryError = "Không thể tải hành trình (${response.code()})"
+            }
+        } catch (e: Exception) {
+            dayPlans = emptyList()
+            itineraryError = e.message ?: "Không thể tải hành trình"
+        } finally {
+            isLoadingItinerary = false
+        }
     }
 
     val floraBookingId = if (tour.isBooked && isUuid(tour.id)) tour.id else null
@@ -930,6 +835,22 @@ fun DetailedItineraryScreen(
                         }
 
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            if (tour.isBooked && isUuid(tour.id)) {
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = PrimaryGreen
+                                ) {
+                                    Text(
+                                        text = "Chat đoàn",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier
+                                            .clickable { onOpenGroupChat(tour.id) }
+                                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                                    )
+                                }
+                            }
                             Surface(
                                 modifier = Modifier.size(40.dp),
                                 shape = CircleShape,
@@ -1069,6 +990,36 @@ fun DetailedItineraryScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             // Day Plans Column of Timeline items
+                            when {
+                                isLoadingItinerary -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 32.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(color = PrimaryGreen)
+                                    }
+                                }
+                                itineraryError != null -> {
+                                    Text(
+                                        text = itineraryError ?: "",
+                                        color = Color(0xFFD32F2F),
+                                        fontSize = 14.sp,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                                dayPlans.isEmpty() -> {
+                                    Text(
+                                        text = "Chưa có hành trình chi tiết cho tour này.",
+                                        color = SecondaryTextColor,
+                                        fontSize = 14.sp,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                                else -> {
                             dayPlans.forEachIndexed { index, dayPlan ->
                                 val isExpanded = expandedDays[dayPlan.dayNumber] ?: false
                                 val hasCurrentActivity = dayPlan.activities.any { it.status == ActivityStatus.Current }
@@ -1228,10 +1179,31 @@ fun DetailedItineraryScreen(
                                     }
                                 }
                             }
+                                }
+                            }
                         }
 
                         1 -> {
                             // ── TAB 1: VÉ ĐIỆN TỬ (E-Ticket) ──
+                            val detail = bookingDetail
+                            val orderIdDisplay = detail?.paymentOrderId?.takeIf { it.isNotBlank() }
+                                ?: detail?.bookingId
+                                ?: "FL-${100000 + tour.id.hashCode() % 900000}"
+                            val customerName = detail?.guestNames?.substringBefore(",")?.trim()?.takeIf { it.isNotBlank() }
+                                ?: detail?.emergencyContactName
+                                ?: "—"
+                            val departureDisplay = detail?.sessionStartDate?.take(10)
+                                ?: tour.bookingDate?.removePrefix("Khởi hành: ")?.removePrefix("Đặt ngày: ")
+                                ?: "—"
+                            val durationDisplay = when {
+                                detail?.tourDurationDays != null && detail.tourDurationNights != null ->
+                                    "${detail.tourDurationDays} ngày ${detail.tourDurationNights} đêm"
+                                detail?.tourDurationDays != null ->
+                                    "${detail.tourDurationDays} ngày"
+                                else -> "—"
+                            }
+                            val guestCountDisplay = detail?.guestCount?.let { "$it khách" } ?: "—"
+
                             Text(
                                 text = "Thông tin Vé Điện Tử đặt chỗ",
                                 fontWeight = FontWeight.Bold,
@@ -1272,7 +1244,7 @@ fun DetailedItineraryScreen(
                                         }
                                     }
                                     Text(
-                                        text = "FL-${100000 + tour.id.hashCode() % 900000}",
+                                        text = orderIdDisplay,
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 20.sp,
                                         color = DarkTextColor
@@ -1281,10 +1253,10 @@ fun DetailedItineraryScreen(
                                     HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp), color = Color(0xFFF2F2F2))
 
                                     // Customer Details
-                                    TicketDetailRow("Khách hàng", "Bảo")
-                                    TicketDetailRow("Khởi hành", tour.bookingDate ?: "28/05/2026")
-                                    TicketDetailRow("Thời gian", "5 ngày 4 đêm")
-                                    TicketDetailRow("Số lượng", "2 Người lớn, 0 Trẻ em")
+                                    TicketDetailRow("Khách hàng", customerName)
+                                    TicketDetailRow("Khởi hành", departureDisplay)
+                                    TicketDetailRow("Thời gian", durationDisplay)
+                                    TicketDetailRow("Số lượng", guestCountDisplay)
 
                                     HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp), color = Color(0xFFF2F2F2))
 

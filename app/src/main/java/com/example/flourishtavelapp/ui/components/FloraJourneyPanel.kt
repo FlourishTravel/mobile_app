@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.components
+﻿package com.example.flourishtravelapp.ui.components
 
 import android.Manifest
 import android.content.Intent
@@ -31,18 +31,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.flourishtavelapp.data.api.RetrofitClient
-import com.example.flourishtavelapp.data.model.FloraJourneyDto
-import com.example.flourishtavelapp.data.model.FloraNearbyItem
-import com.example.flourishtavelapp.data.model.FloraNearbyRecommendationResponse
-import com.example.flourishtavelapp.data.repository.FloraNearbyRepository
-import com.example.flourishtavelapp.data.repository.FloraPreferenceRepository
-import com.example.flourishtavelapp.data.repository.NearbyFetchResult
-import com.example.flourishtavelapp.location.FusedForegroundLocationProvider
-import com.example.flourishtavelapp.location.LocationPermissionHelper
-import com.example.flourishtavelapp.location.LocationProvider
-import com.example.flourishtavelapp.location.MobileLocationResult
-import com.example.flourishtavelapp.location.NearbyLocationPolicy
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.FloraJourneyDto
+import com.example.flourishtravelapp.data.model.FloraNearbyItem
+import com.example.flourishtravelapp.data.model.FloraNearbyRecommendationResponse
+import com.example.flourishtravelapp.data.repository.FloraNearbyRepository
+import com.example.flourishtravelapp.data.repository.FloraPreferenceRepository
+import com.example.flourishtravelapp.data.repository.NearbyFetchResult
+import com.example.flourishtravelapp.location.FusedForegroundLocationProvider
+import com.example.flourishtravelapp.location.LocationPermissionHelper
+import com.example.flourishtravelapp.location.LocationProvider
+import com.example.flourishtravelapp.location.MobileLocationResult
+import com.example.flourishtravelapp.location.NearbyLocationPolicy
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

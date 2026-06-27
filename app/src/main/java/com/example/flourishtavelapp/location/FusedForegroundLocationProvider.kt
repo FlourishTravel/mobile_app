@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.location
+﻿package com.example.flourishtravelapp.location
 
 import android.content.Context
 import android.location.LocationManager as AndroidLocationManager

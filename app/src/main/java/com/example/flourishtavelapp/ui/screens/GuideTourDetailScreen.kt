@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -14,14 +14,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.mapper.formatTimeHm
+import com.example.flourishtravelapp.data.mapper.toGuideTour
+import com.example.flourishtravelapp.data.model.GuideCheckinRequest
+import com.example.flourishtravelapp.data.model.SessionActivitySchedulePatchRequest
+import com.example.flourishtravelapp.data.model.SessionScheduleActivityDto
+import com.example.flourishtravelapp.data.model.SessionScheduleViewDto
+import com.example.flourishtravelapp.ui.theme.*
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,25 +36,182 @@ fun GuideTourDetailScreen(
     tour: GuideTour,
     onBack: () -> Unit,
     onCustomerListClick: () -> Unit,
+    onOpenGroupChat: (String) -> Unit = {},
+    onOpenOperations: () -> Unit = {},
+    onOpenGuestsTab: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val statusColor = Color(tour.status.color)
-    
-    // Expanded map state for accordion (Default Day 1 is expanded, or active day is expanded)
-    val expandedDays = remember {
-        mutableStateMapOf<Int, Boolean>().apply {
-            tour.itinerary.forEach { day ->
-                if (day.isCurrent) put(day.day, true)
+    val scope = rememberCoroutineScope()
+    var detailTour by remember(tour.sessionId) { mutableStateOf(tour) }
+    var sessionSchedule by remember(tour.sessionId) { mutableStateOf<SessionScheduleViewDto?>(null) }
+    var isLoading by remember(tour.sessionId) { mutableStateOf(true) }
+    var scheduleBusy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var activeDay by remember { mutableIntStateOf(1) }
+    var editActivity by remember { mutableStateOf<SessionScheduleActivityDto?>(null) }
+    var editTitle by remember { mutableStateOf("") }
+    var editLocation by remember { mutableStateOf("") }
+    var editStartTime by remember { mutableStateOf("") }
+    var editEndTime by remember { mutableStateOf("") }
+    var editNote by remember { mutableStateOf("") }
+    var editStatus by remember { mutableStateOf("CONFIRMED") }
+    var editGathering by remember { mutableStateOf(false) }
+    var checkInBusyId by remember { mutableStateOf<String?>(null) }
+
+    fun reloadAll() {
+        scope.launch {
+            isLoading = true
+            error = null
+            try {
+                val response = RetrofitClient.guideApiService.getSession(tour.sessionId)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    response.body()?.data?.let { detailTour = it.toGuideTour() }
+                }
+                val guestsResponse = RetrofitClient.guideApiService.getSessionGuests(tour.sessionId)
+                if (guestsResponse.isSuccessful && guestsResponse.body()?.success == true) {
+                    guestsResponse.body()?.data?.let { detailTour = it.toGuideTour(detailTour) }
+                }
+                val schedResponse = RetrofitClient.guideApiService.getSessionSchedule(tour.sessionId)
+                if (schedResponse.isSuccessful && schedResponse.body()?.success == true) {
+                    sessionSchedule = schedResponse.body()?.data
+                    sessionSchedule?.days?.firstOrNull()?.dayNumber?.let { activeDay = it }
+                }
+            } catch (e: Exception) {
+                error = e.localizedMessage
+            } finally {
+                isLoading = false
             }
+        }
+    }
+
+    LaunchedEffect(tour.sessionId) { reloadAll() }
+
+    val displayTour = detailTour
+    val chatBookingId = displayTour.customers.firstOrNull()?.id?.takeIf { it.isNotBlank() }
+    val statusColor = Color(displayTour.status.color)
+    val scheduleDay = sessionSchedule?.days?.find { it.dayNumber == activeDay }
+
+    val expandedDays = remember(displayTour.sessionId, displayTour.itinerary) {
+        mutableStateMapOf<Int, Boolean>().apply {
+            displayTour.itinerary.forEach { day -> if (day.isCurrent) put(day.day, true) }
             if (isEmpty()) put(1, true)
         }
     }
 
+    fun openEdit(row: SessionScheduleActivityDto) {
+        val eff = row.effective
+        editActivity = row
+        editTitle = eff?.title ?: row.template?.title.orEmpty()
+        editLocation = eff?.locationName ?: row.template?.locationName.orEmpty()
+        editStartTime = formatTimeHm(eff?.startTime ?: row.template?.startTime)
+        editEndTime = formatTimeHm(eff?.endTime ?: row.template?.endTime)
+        editNote = row.override?.operationalNote.orEmpty()
+        editStatus = eff?.scheduleStatus ?: row.template?.scheduleStatus ?: "CONFIRMED"
+        editGathering = eff?.isGatheringEvent ?: row.template?.isGatheringEvent ?: false
+    }
+
+    fun buildPatchBody(): SessionActivitySchedulePatchRequest {
+        val baseDate = displayTour.startDateIso?.take(10) ?: "2026-01-01"
+        fun toOffset(timeStr: String): String? {
+            if (timeStr.isBlank()) return null
+            val parts = timeStr.split(":")
+            if (parts.size < 2) return null
+            return "${baseDate}T${parts[0].padStart(2, '0')}:${parts[1]}:00+07:00"
+        }
+        return SessionActivitySchedulePatchRequest(
+            title = editTitle.ifBlank { null },
+            locationName = editLocation.ifBlank { null },
+            startAt = toOffset(editStartTime),
+            endAt = toOffset(editEndTime),
+            scheduleStatus = editStatus,
+            operationalNote = editNote.ifBlank { null },
+            isGatheringEvent = editGathering
+        )
+    }
+
+    if (isLoading && displayTour.itinerary.isEmpty()) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = PrimaryGreen)
+        }
+        return
+    }
+
+    if (editActivity != null) {
+        AlertDialog(
+            onDismissRequest = { if (!scheduleBusy) editActivity = null },
+            title = { Text("Chỉnh sửa hoạt động") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(editTitle, { editTitle = it }, label = { Text("Tiêu đề") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(editLocation, { editLocation = it }, label = { Text("Địa điểm") }, modifier = Modifier.fillMaxWidth())
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(editStartTime, { editStartTime = it }, label = { Text("Bắt đầu") }, modifier = Modifier.weight(1f))
+                        OutlinedTextField(editEndTime, { editEndTime = it }, label = { Text("Kết thúc") }, modifier = Modifier.weight(1f))
+                    }
+                    OutlinedTextField(editNote, { editNote = it }, label = { Text("Ghi chú vận hành") }, modifier = Modifier.fillMaxWidth())
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(editGathering, { editGathering = it })
+                        Text("Sự kiện tập trung", fontSize = 13.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !scheduleBusy,
+                    onClick = {
+                        val actId = editActivity?.activityId ?: return@TextButton
+                        scheduleBusy = true
+                        scope.launch {
+                            try {
+                                val response = RetrofitClient.guideApiService.patchSessionActivitySchedule(
+                                    tour.sessionId, actId, buildPatchBody()
+                                )
+                                if (response.isSuccessful && response.body()?.success == true) {
+                                    sessionSchedule = response.body()?.data
+                                    editActivity = null
+                                } else {
+                                    error = response.body()?.message ?: "Lưu thất bại"
+                                }
+                            } finally {
+                                scheduleBusy = false
+                            }
+                        }
+                    }
+                ) { Text("Lưu nháp") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        enabled = !scheduleBusy,
+                        onClick = {
+                            val actId = editActivity?.activityId ?: return@TextButton
+                            scheduleBusy = true
+                            scope.launch {
+                                try {
+                                    RetrofitClient.guideApiService.patchSessionActivitySchedule(
+                                        tour.sessionId, actId, buildPatchBody()
+                                    )
+                                    val pub = RetrofitClient.guideApiService.publishSessionActivitySchedule(
+                                        tour.sessionId, actId
+                                    )
+                                    if (pub.isSuccessful && pub.body()?.success == true) {
+                                        sessionSchedule = pub.body()?.data
+                                        editActivity = null
+                                    }
+                                } finally {
+                                    scheduleBusy = false
+                                }
+                            }
+                        }
+                    ) { Text("Công bố") }
+                    TextButton(onClick = { if (!scheduleBusy) editActivity = null }) { Text("Hủy") }
+                }
+            }
+        )
+    }
+
     Box(modifier = modifier.fillMaxSize().background(NatureGreenBackground)) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // ── 1. Synchronized Slim White Header ───────────────────────────────────
+        Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -57,30 +221,18 @@ fun GuideTourDetailScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color(0xFF5A6E85)
-                    )
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color(0xFF5A6E85))
                 }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
                 Text(
-                    text = "Chi tiết Tour",
+                    "Chi tiết Tour",
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 20.sp,
-                    color = Color(0xFF00796B), // Integrated Teal/Green color
+                    color = Color(0xFF00796B),
                     modifier = Modifier.weight(1f)
                 )
-
-                // Status Badge at top right
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = statusColor.copy(alpha = 0.12f)
-                ) {
+                Surface(shape = RoundedCornerShape(10.dp), color = statusColor.copy(alpha = 0.12f)) {
                     Text(
-                        text = tour.status.label,
+                        displayTour.status.label,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         color = statusColor,
                         fontSize = 11.sp,
@@ -88,415 +240,148 @@ fun GuideTourDetailScreen(
                     )
                 }
             }
-            HorizontalDivider(thickness = 1.dp, color = Color(0xFFE2E8F0))
+            HorizontalDivider(color = Color(0xFFE2E8F0))
 
-            // ── 2. Scrollable Details Area ──────────────────────────────────────────
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // ── Tour Card (Formatted like passenger's booked tour card) ──────────
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE5E5E5)),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Left rounded image
-                        val imageRes = if (tour.name.contains("Đà Nẵng")) {
-                            com.example.flourishtavelapp.R.drawable.travel_bg
-                        } else if (tour.name.contains("Bali")) {
-                            com.example.flourishtavelapp.R.drawable.maya_bg
-                        } else {
-                            com.example.flourishtavelapp.R.drawable.bangkook_bg
-                        }
-                        Image(
-                            painter = painterResource(id = imageRes),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(105.dp)
-                                .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-
-                        // Right tour metadata
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = tour.id,
-                                color = Color(0xFF757575),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            Text(
-                                text = tour.name,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = Color(0xFF1E272C),
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            // Star Rating & Review (Like passenger's card)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Filled.Star,
-                                    contentDescription = "Rating Star",
-                                    tint = Color(0xFFFFB300),
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "4.9 (128) • Đang diễn ra",
-                                    color = Color(0xFF757575),
-                                    fontSize = 11.sp
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            // Location Pin
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Filled.LocationOn,
-                                    contentDescription = "Location Pin",
-                                    tint = Color(0xFF9E9E9E),
-                                    modifier = Modifier.size(13.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = tour.destination,
-                                    color = Color(0xFF757575),
-                                    fontSize = 11.sp
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            // Tags (pastel backgrounds like passenger's card)
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFFF3E5F5)
-                                ) {
-                                    Text(
-                                        text = "HDV Tiếng Việt",
-                                        color = Color(0xFF7B1FA2),
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFFE1F5FE)
-                                ) {
-                                    Text(
-                                        text = "Đã xác nhận",
-                                        color = Color(0xFF0288D1),
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
+                error?.let {
+                    Text(it, color = Color(0xFFC62828), fontSize = 12.sp, modifier = Modifier.padding(16.dp))
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+                TourHeaderCard(displayTour)
 
-                // ── Info Cards Row (Khởi hành, Thời gian, Khách) ────────────────────────
+                Spacer(modifier = Modifier.height(16.dp))
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    GuideTourInfoCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.CalendarMonth,
-                        label = "Khởi hành",
-                        value = tour.startDate
-                    )
-                    GuideTourInfoCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Timer,
-                        label = "Thời gian",
-                        value = "${tour.durationDays} ngày"
-                    )
-                    GuideTourInfoCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Group,
-                        label = "Khách",
-                        value = "${tour.totalCustomers} người"
-                    )
+                    GuideTourInfoCard(Modifier.weight(1f), Icons.Default.CalendarMonth, "Khởi hành", displayTour.startDate)
+                    GuideTourInfoCard(Modifier.weight(1f), Icons.Default.Timer, "Thời gian", "${displayTour.durationDays} ngày")
+                    GuideTourInfoCard(Modifier.weight(1f), Icons.Default.Group, "Khách", "${displayTour.checkedInParticipants}/${displayTour.totalCustomers}")
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // ── Meeting Point Card ──────────────────────────────────────────────────
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(40.dp),
-                            shape = CircleShape,
-                            color = Color(0xFFE8F5E9)
+                if (displayTour.customers.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Check-in tập trung", fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    displayTour.customers.take(5).forEach { customer ->
+                        val busy = checkInBusyId == customer.id
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.PinDrop,
-                                    contentDescription = null,
-                                    tint = Color(0xFF00796B),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "Điểm tập trung",
-                                fontSize = 11.sp,
-                                color = SecondaryTextColor,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = tour.meetingPoint,
-                                fontSize = 14.sp,
-                                color = DarkTextColor,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // ── Itinerary Section Header ───────────────────────────────────────────
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(4.dp, 20.dp)
-                            .background(Color(0xFF00796B), RoundedCornerShape(2.dp))
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = "Lịch trình chi tiết",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkTextColor
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // ── Expandable Accordion Timeline (Redesigned matching passenger detail) ──
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                ) {
-                    tour.itinerary.forEachIndexed { index, day ->
-                        val isLast = index == tour.itinerary.lastIndex
-                        val isExpanded = expandedDays[day.day] ?: false
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(IntrinsicSize.Min)
-                        ) {
-                            // Left Timeline Column
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier
-                                    .width(36.dp)
-                                    .fillMaxHeight()
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Top vertical line segment
-                                if (index > 0) {
-                                    Box(
-                                        modifier = Modifier
-                                            .width(2.dp)
-                                            .height(20.dp)
-                                            .background(Color(0xFFCCD5C7))
-                                    )
-                                } else {
-                                    Spacer(modifier = Modifier.height(20.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(customer.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                    Text(customer.phone, fontSize = 11.sp, color = SecondaryTextColor)
                                 }
-
-                                // Circular indicator dot for the day
-                                val dotColor = if (day.isCurrent) Color(0xFF00796B) else Color(0xFFB0BEC5)
-                                val dotSize = if (day.isCurrent) 16.dp else 12.dp
-                                Surface(
-                                    modifier = Modifier.size(dotSize),
-                                    shape = CircleShape,
-                                    color = dotColor,
-                                    border = if (day.isCurrent) BorderStroke(2.dp, Color.White) else null
-                                ) {}
-
-                                // Bottom vertical line segment
-                                if (!isLast) {
-                                    Box(
-                                        modifier = Modifier
-                                            .width(2.dp)
-                                            .weight(1f)
-                                            .background(Color(0xFFCCD5C7))
-                                    )
-                                } else {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
-                            }
-
-                            // Right Expandable Day Accordion Card
-                            Card(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(bottom = 16.dp)
-                                    .clickable {
-                                        expandedDays[day.day] = !isExpanded
-                                    },
-                                shape = RoundedCornerShape(24.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp)
-                                ) {
-                                    // Header Row (Day title and chevron indicator)
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "Ngày ${day.day}: ${day.title}",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 18.sp,
-                                            color = Color(0xFF1E272C)
-                                        )
-                                        
-                                        Icon(
-                                            imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                            contentDescription = "Expand Accordion",
-                                            tint = Color(0xFF00796B),
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-
-                                    // Expanded details withParsed Activities
-                                    if (isExpanded) {
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        
-                                        // Italic subtitle matching user photo mockup
-                                        Text(
-                                            text = when (day.day) {
-                                                1 -> "Chào mừng bạn đến với thủ đô rực rỡ."
-                                                2 -> "Khám phá lịch sử và kỳ quan thiên nhiên."
-                                                3 -> "Tìm về không gian văn hóa chậm rãi."
-                                                4 -> "Trải nghiệm nghệ thuật và tầm nhìn trên cao."
-                                                else -> "Tạm biệt và hẹn gặp lại du khách."
-                                            },
-                                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                            color = SecondaryTextColor,
-                                            fontSize = 13.sp
-                                        )
-
-                                        Spacer(modifier = Modifier.height(16.dp))
-
-                                        // Parsed list of activities
-                                        val activities = remember(day.description) {
-                                            day.description.split("\n").filter { it.isNotBlank() }
-                                        }
-
-                                        Column(
-                                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                                        ) {
-                                            activities.forEachIndexed { actIndex, activity ->
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                                ) {
-                                                    // Dynamic check circle indicators based on tour status
-                                                    val isCompleted = day.isCompleted || (day.isCurrent && actIndex < 2)
-                                                    val isCurrent = day.isCurrent && actIndex == 2
-                                                    
-                                                    if (isCompleted) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.CheckCircle,
-                                                            contentDescription = "Completed",
-                                                            tint = Color(0xFF00796B),
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    } else if (isCurrent) {
-                                                        // Active dot ring
-                                                        Box(
-                                                            modifier = Modifier.size(20.dp),
-                                                            contentAlignment = Alignment.Center
-                                                        ) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(20.dp)
-                                                                    .border(2.dp, Color(0xFF00796B), CircleShape)
-                                                            )
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(10.dp)
-                                                                    .background(Color(0xFF00796B), CircleShape)
-                                                            )
-                                                        }
-                                                    } else {
-                                                        // Outline ring
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .size(20.dp)
-                                                                .border(1.5.dp, Color(0xFF81C784), CircleShape)
-                                                        )
-                                                    }
-
-                                                    Text(
-                                                        text = activity,
-                                                        fontWeight = FontWeight.Medium,
-                                                        fontSize = 14.sp,
-                                                        color = Color(0xFF2C3E50),
-                                                        modifier = Modifier.weight(1f)
+                                if (customer.checkedInGathering) {
+                                    Icon(Icons.Default.CheckCircle, null, tint = PrimaryGreen)
+                                } else if (!customer.travelerUserId.isNullOrBlank()) {
+                                    FilledTonalButton(
+                                        onClick = {
+                                            val uid = customer.travelerUserId ?: return@FilledTonalButton
+                                            checkInBusyId = customer.id
+                                            scope.launch {
+                                                try {
+                                                    RetrofitClient.guideApiService.checkin(
+                                                        GuideCheckinRequest(tour.sessionId, uid, "gathering")
                                                     )
+                                                    reloadAll()
+                                                } finally {
+                                                    checkInBusyId = null
                                                 }
                                             }
+                                        },
+                                        enabled = !busy,
+                                        modifier = Modifier.height(36.dp)
+                                    ) {
+                                        if (busy) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                                        else Text("Check-in", fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                sessionSchedule?.days?.let { days ->
+                    if (days.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Lịch vận hành (chỉnh sửa)", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            TextButton(onClick = onOpenOperations) {
+                                Text("Vận hành", fontSize = 12.sp)
+                            }
+                        }
+                        ScrollableTabRow(
+                            selectedTabIndex = days.indexOfFirst { it.dayNumber == activeDay }.coerceAtLeast(0),
+                            containerColor = Color.Transparent,
+                            contentColor = PrimaryGreen,
+                            edgePadding = 16.dp
+                        ) {
+                            days.forEach { day ->
+                                val dn = day.dayNumber ?: 1
+                                Tab(selected = activeDay == dn, onClick = { activeDay = dn }, text = { Text("Ngày $dn") })
+                            }
+                        }
+                        scheduleDay?.activities.orEmpty().forEach { row ->
+                            val eff = row.effective
+                            val cancelled = eff?.cancelled == true
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            formatTimeHm(eff?.startTime ?: row.template?.startTime),
+                                            fontSize = 11.sp,
+                                            color = PrimaryGreen,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            eff?.title ?: row.template?.title ?: "Hoạt động",
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 14.sp,
+                                            color = if (cancelled) SecondaryTextColor else DarkTextColor
+                                        )
+                                        eff?.locationName?.let {
+                                            Text(it, fontSize = 12.sp, color = SecondaryTextColor)
+                                        }
+                                    }
+                                    IconButton(onClick = { openEdit(row) }) {
+                                        Icon(Icons.Default.Edit, null, tint = PrimaryGreen)
+                                    }
+                                    if (!cancelled && row.activityId != null) {
+                                        IconButton(onClick = {
+                                            val actId = row.activityId ?: return@IconButton
+                                            scope.launch {
+                                                val r = RetrofitClient.guideApiService.cancelSessionActivitySchedule(
+                                                    tour.sessionId, actId
+                                                )
+                                                if (r.isSuccessful && r.body()?.success == true) {
+                                                    sessionSchedule = r.body()?.data
+                                                }
+                                            }
+                                        }) {
+                                            Icon(Icons.Default.Cancel, null, tint = Color(0xFFC62828))
                                         }
                                     }
                                 }
@@ -505,43 +390,127 @@ fun GuideTourDetailScreen(
                     }
                 }
 
+                if (displayTour.meetingPoint.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.PinDrop, null, tint = PrimaryGreen)
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text("Điểm tập trung", fontSize = 11.sp, color = SecondaryTextColor)
+                                Text(displayTour.meetingPoint, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Lịch trình tour", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                displayTour.itinerary.forEachIndexed { index, day ->
+                    val isExpanded = expandedDays[day.day] ?: false
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .clickable { expandedDays[day.day] = !isExpanded },
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Ngày ${day.day}: ${day.title}", fontWeight = FontWeight.Bold)
+                            if (isExpanded && day.description.isNotBlank()) {
+                                Spacer(Modifier.height(6.dp))
+                                Text(day.description, fontSize = 13.sp, color = SecondaryTextColor)
+                            }
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(100.dp))
             }
         }
 
-        // ── 3. Fixed Bottom Button (Xem danh sách khách) ───────────────────────
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, NatureGreenBackground, NatureGreenBackground)
-                    )
-                )
+                .background(Brush.verticalGradient(listOf(Color.Transparent, NatureGreenBackground)))
                 .padding(16.dp)
         ) {
-            Button(
-                onClick = onCustomerListClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
-            ) {
-                Icon(Icons.Default.Group, contentDescription = null)
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "Xem danh sách khách (${tour.customers.size})",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = onOpenGuestsTab, modifier = Modifier.weight(1f).height(48.dp)) {
+                        Icon(Icons.Default.Group, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Khách", fontSize = 13.sp)
+                    }
+                    OutlinedButton(onClick = onOpenOperations, modifier = Modifier.weight(1f).height(48.dp)) {
+                        Icon(Icons.Default.Schedule, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Vận hành", fontSize = 13.sp)
+                    }
+                }
+                if (chatBookingId != null) {
+                    OutlinedButton(
+                        onClick = { onOpenGroupChat(chatBookingId) },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        border = BorderStroke(1.5.dp, PrimaryGreen),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryGreen)
+                    ) {
+                        Icon(Icons.Default.Chat, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Chat đoàn", fontWeight = FontWeight.Bold)
+                    }
+                }
+                Button(
+                    onClick = onCustomerListClick,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+                ) {
+                    Icon(Icons.Default.Group, null)
+                    Spacer(Modifier.width(10.dp))
+                    Text("Danh sách khách (${displayTour.totalCustomers})", fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
 }
 
-// ── Sub-Composables ───────────────────────────────────────────────────────────
+@Composable
+private fun TourHeaderCard(displayTour: GuideTour) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            val imageRes = when {
+                displayTour.name.contains("Đà Nẵng") -> com.example.flourishtravelapp.R.drawable.travel_bg
+                displayTour.name.contains("Bali") -> com.example.flourishtravelapp.R.drawable.maya_bg
+                else -> com.example.flourishtravelapp.R.drawable.bangkook_bg
+            }
+            Image(
+                painter = painterResource(imageRes),
+                contentDescription = null,
+                modifier = Modifier.size(90.dp).clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(displayTour.id, fontSize = 11.sp, color = Color(0xFF757575))
+                Text(displayTour.name, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.LocationOn, null, tint = Color(0xFF9E9E9E), modifier = Modifier.size(13.dp))
+                    Text(" ${displayTour.destination}", fontSize = 11.sp, color = Color(0xFF757575))
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun GuideTourInfoCard(
@@ -557,10 +526,7 @@ private fun GuideTourInfoCard(
         border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
         shadowElevation = 1.dp
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(icon, null, tint = PrimaryGreen, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.height(6.dp))
             Text(value, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = DarkTextColor)

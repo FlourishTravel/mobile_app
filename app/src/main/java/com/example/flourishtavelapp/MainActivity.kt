@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp
+package com.example.flourishtravelapp
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,18 +10,20 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import com.example.flourishtavelapp.ui.components.FlourishBottomNavigation
-import com.example.flourishtavelapp.ui.screens.*
-import com.example.flourishtavelapp.ui.theme.FlourishTavelAppTheme
-import com.example.flourishtavelapp.data.session.SessionManager
-import com.example.flourishtavelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.ui.components.FlourishBottomNavigation
+import com.example.flourishtravelapp.ui.screens.*
+import com.example.flourishtravelapp.ui.theme.flourishtravelappTheme
+import com.example.flourishtravelapp.data.session.SessionManager
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.mapper.toGuideAccount
+import com.example.flourishtravelapp.data.model.isTourGuideRole
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            FlourishTavelAppTheme {
+            flourishtravelappTheme {
                 AppNavigation()
             }
         }
@@ -30,7 +32,8 @@ class MainActivity : ComponentActivity() {
 
 enum class NavigationState {
     Login, Register, MainApp, TourDetail, BookingReview, PaymentInfo, BankTransfer, BookingSuccess,
-    GuideHome, GuideTourDetail, GuideCustomerList, Activities, FloraSettings
+    GuideHome, GuideTourDetail, GuideCustomerList, GuideProfile, Support,
+    Activities, ActivityDetail, FloraSettings, GroupChat, Notifications
 }
 
 @Composable
@@ -40,24 +43,29 @@ fun AppNavigation() {
     var isLoggedIn by remember { mutableStateOf(false) }
     var isGuideLoggedIn by remember { mutableStateOf(false) }
     var selectedCategoryForActivities by remember { mutableStateOf("") }
+    var selectedActivitySlug by remember { mutableStateOf<String?>(null) }
     var selectedTourId by remember { mutableStateOf<String?>(null) }
     var selectedSessionId by remember { mutableStateOf<String?>(null) }
 
-    // SharedPreferences Session Manager
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
 
-    // Initialize Retrofit Client
     remember {
         RetrofitClient.init(sessionManager)
         true
     }
 
-    // Guide State
-    val currentGuide = com.example.flourishtavelapp.ui.screens.mockGuideAccounts.first()
-    var selectedGuideTour by remember { mutableStateOf<com.example.flourishtavelapp.ui.screens.GuideTour?>(null) }
-    
-    // User Profile State
+    var currentGuide by remember { mutableStateOf<GuideAccount?>(null) }
+    var selectedGuideTour by remember { mutableStateOf<GuideTour?>(null) }
+    var guideHomeTab by remember { mutableIntStateOf(0) }
+    var guidePreselectSessionId by remember { mutableStateOf<String?>(null) }
+    var guideGroupSubTab by remember { mutableIntStateOf(0) }
+    var guideWorkSubTab by remember { mutableIntStateOf(0) }
+    var subScreenReturnState by remember { mutableStateOf(NavigationState.MainApp) }
+    var subScreenReturnTab by remember { mutableIntStateOf(0) }
+
+    val isAuthenticated = isLoggedIn || isGuideLoggedIn
+
     var userName by remember { mutableStateOf("Bảo") }
     var userHandle by remember { mutableStateOf("@bao_explorer") }
     var userEmail by remember { mutableStateOf("bao123@flourish.travel") }
@@ -65,7 +73,6 @@ fun AppNavigation() {
     var userAddress by remember { mutableStateOf("TP. Hồ Chí Minh, Việt Nam") }
     var notificationEnabled by remember { mutableStateOf(true) }
 
-    // Booking State
     var adultCount by remember { mutableIntStateOf(2) }
     var childCount by remember { mutableIntStateOf(1) }
     var bookingName by remember { mutableStateOf("Nguyễn Văn A") }
@@ -74,15 +81,17 @@ fun AppNavigation() {
     var bookingIdCard by remember { mutableStateOf("012345678901") }
     var bookingGender by remember { mutableStateOf("Nam") }
     var bookingNote by remember { mutableStateOf("") }
+    var bookingPaymentMethod by remember { mutableStateOf("Bank Transfer") }
+    var chatBookingId by remember { mutableStateOf("") }
+    var chatReturnState by remember { mutableStateOf(NavigationState.MainApp) }
+    var chatReturnTab by remember { mutableIntStateOf(1) }
 
-    // Backend booking response and session details
     var bookingSessionId by remember { mutableStateOf("") }
     var bookingPromoCode by remember { mutableStateOf<String?>(null) }
     var bookingPromoDiscount by remember { mutableLongStateOf(0L) }
     var createdBookingId by remember { mutableStateOf("") }
     var createdOrderId by remember { mutableStateOf("") }
 
-    // Auto-Login: Check if token exists on app launch
     LaunchedEffect(Unit) {
         if (sessionManager.isLoggedIn()) {
             val user = sessionManager.getUserInfo()
@@ -91,8 +100,10 @@ fun AppNavigation() {
                 userEmail = user.email
                 userHandle = "@${user.email.substringBefore("@")}"
                 userPhone = user.phone ?: ""
-                if (user.role.equals("GUIDE", ignoreCase = true)) {
+                if (user.role.isTourGuideRole()) {
+                    isLoggedIn = false
                     isGuideLoggedIn = true
+                    currentGuide = user.toGuideAccount()
                     navState = NavigationState.GuideHome
                 } else {
                     isLoggedIn = true
@@ -103,11 +114,29 @@ fun AppNavigation() {
         }
     }
 
-    val onBackToHome = { 
+    val onBackToHome = {
         navState = NavigationState.MainApp
-        selectedTab = 0 
+        selectedTab = 0
     }
     val onGoToProfile = { selectedTab = 4 }
+
+    val navigateBackFromSubScreen = {
+        navState = subScreenReturnState
+        when (subScreenReturnState) {
+            NavigationState.GuideHome -> guideHomeTab = subScreenReturnTab
+            NavigationState.MainApp -> selectedTab = subScreenReturnTab
+            else -> Unit
+        }
+    }
+
+    val guideLogout = {
+        sessionManager.clearSession()
+        isGuideLoggedIn = false
+        isLoggedIn = false
+        currentGuide = null
+        navState = NavigationState.MainApp
+        selectedTab = 0
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -132,7 +161,9 @@ fun AppNavigation() {
                     selectedTab = 0
                 },
                 onGuideLoginSuccess = { user ->
+                    isLoggedIn = false
                     isGuideLoggedIn = true
+                    currentGuide = user.toGuideAccount()
                     userName = user.fullName
                     userEmail = user.email
                     userHandle = "@${user.email.substringBefore("@")}"
@@ -140,9 +171,9 @@ fun AppNavigation() {
                     navState = NavigationState.GuideHome
                 },
                 onRegisterClick = { navState = NavigationState.Register },
-                onBack = { 
+                onBack = {
                     navState = NavigationState.MainApp
-                    selectedTab = 0 
+                    selectedTab = 0
                 }
             )
             NavigationState.Register -> RegisterScreen(
@@ -177,12 +208,13 @@ fun AppNavigation() {
                 initialAdultCount = adultCount,
                 initialChildCount = childCount,
                 onBack = { navState = NavigationState.TourDetail },
-                onProceed = { adults, children, sessionId, promoCode, discount ->
+                onProceed = { adults, children, sessionId, promoCode, discount, paymentMethod ->
                     adultCount = adults
                     childCount = children
                     bookingSessionId = sessionId
                     bookingPromoCode = promoCode
                     bookingPromoDiscount = discount
+                    bookingPaymentMethod = paymentMethod
                     navState = NavigationState.PaymentInfo
                 },
                 initialTourId = selectedTourId,
@@ -224,7 +256,8 @@ fun AppNavigation() {
                 bookingPhone = bookingPhone,
                 bookingIdCard = bookingIdCard,
                 bookingGender = bookingGender,
-                bookingNote = bookingNote
+                bookingNote = bookingNote,
+                paymentMethod = bookingPaymentMethod
             )
             NavigationState.BookingSuccess -> BookingSuccessScreen(
                 adultCount = adultCount,
@@ -241,40 +274,116 @@ fun AppNavigation() {
             NavigationState.Activities -> ActivitiesScreen(
                 initialCategoryLabel = selectedCategoryForActivities,
                 onBack = { navState = NavigationState.MainApp },
-                onActivityClick = { navState = NavigationState.TourDetail }
+                onActivityClick = { activity ->
+                    val slug = activity.slug
+                    if (!slug.isNullOrBlank()) {
+                        selectedActivitySlug = slug
+                        navState = NavigationState.ActivityDetail
+                    }
+                }
             )
+            NavigationState.ActivityDetail -> {
+                val slug = selectedActivitySlug
+                if (slug != null) {
+                    ActivityDetailScreen(
+                        slug = slug,
+                        onBack = { navState = NavigationState.Activities }
+                    )
+                } else {
+                    LaunchedEffect(Unit) { navState = NavigationState.Activities }
+                }
+            }
             NavigationState.FloraSettings -> {
-                if (isLoggedIn) {
+                if (isAuthenticated) {
                     FloraSettingsScreen(
                         modifier = Modifier.padding(innerPadding),
-                        onBack = { navState = NavigationState.MainApp; selectedTab = 4 }
+                        onBack = {
+                            if (isGuideLoggedIn && subScreenReturnState == NavigationState.MainApp) {
+                                navState = NavigationState.GuideHome
+                                guideHomeTab = 4
+                            } else {
+                                navigateBackFromSubScreen()
+                            }
+                        }
                     )
                 } else {
                     LaunchedEffect(Unit) { navState = NavigationState.Login }
                 }
             }
-            // ── Guide Screens ──────────────────────────────────────────────
-            NavigationState.GuideHome -> GuideHomeScreen(
-                guide = currentGuide,
-                modifier = Modifier,
-                onTourClick = { tour ->
-                    selectedGuideTour = tour
-                    navState = NavigationState.GuideTourDetail
-                },
-                onLogout = {
-                    sessionManager.clearSession()
-                    isGuideLoggedIn = false
-                    navState = NavigationState.MainApp
-                    selectedTab = 0
+            NavigationState.GuideHome -> {
+                val guide = currentGuide
+                if (guide != null) {
+                    GuideHomeScreen(
+                        guide = guide,
+                        modifier = Modifier,
+                        selectedTab = guideHomeTab.coerceIn(0, 4),
+                        onTabSelected = { guideHomeTab = it.coerceIn(0, 4) },
+                        initialGuestSessionId = guidePreselectSessionId,
+                        initialGroupSubTab = guideGroupSubTab,
+                        initialWorkSubTab = guideWorkSubTab,
+                        onTourClick = { tour ->
+                            selectedGuideTour = tour
+                            navState = NavigationState.GuideTourDetail
+                        },
+                        onGuideUpdated = { currentGuide = it },
+                        onOpenGroupChat = { bookingId ->
+                            chatBookingId = bookingId
+                            chatReturnState = NavigationState.GuideHome
+                            navState = NavigationState.GroupChat
+                        },
+                        onEditProfile = {
+                            subScreenReturnState = NavigationState.GuideHome
+                            subScreenReturnTab = 4
+                            navState = NavigationState.GuideProfile
+                        },
+                        onNotifications = {
+                            subScreenReturnState = NavigationState.GuideHome
+                            subScreenReturnTab = 4
+                            navState = NavigationState.Notifications
+                        },
+                        onFloraSettings = {
+                            subScreenReturnState = NavigationState.GuideHome
+                            subScreenReturnTab = 4
+                            navState = NavigationState.FloraSettings
+                        },
+                        onSupport = {
+                            subScreenReturnState = NavigationState.GuideHome
+                            subScreenReturnTab = 4
+                            navState = NavigationState.Support
+                        },
+                        onLogout = guideLogout
+                    )
+                } else {
+                    LaunchedEffect(Unit) { navState = NavigationState.Login }
                 }
-            )
+            }
             NavigationState.GuideTourDetail -> {
                 val tour = selectedGuideTour
                 if (tour != null) {
                     GuideTourDetailScreen(
                         tour = tour,
                         onBack = { navState = NavigationState.GuideHome },
-                        onCustomerListClick = { navState = NavigationState.GuideCustomerList }
+                        onCustomerListClick = {
+                            guidePreselectSessionId = tour.sessionId
+                            guideGroupSubTab = 0
+                            guideHomeTab = 2
+                            navState = NavigationState.GuideHome
+                        },
+                        onOpenGroupChat = { bookingId ->
+                            chatBookingId = bookingId
+                            chatReturnState = NavigationState.GuideTourDetail
+                            navState = NavigationState.GroupChat
+                        },
+                        onOpenOperations = {
+                            guideWorkSubTab = 0
+                            guideHomeTab = 3
+                            navState = NavigationState.GuideHome
+                        },
+                        onOpenGuestsTab = {
+                            guideGroupSubTab = 0
+                            guideHomeTab = 2
+                            navState = NavigationState.GuideHome
+                        }
                     )
                 } else {
                     LaunchedEffect(Unit) { navState = NavigationState.GuideHome }
@@ -291,6 +400,90 @@ fun AppNavigation() {
                     LaunchedEffect(Unit) { navState = NavigationState.GuideHome }
                 }
             }
+            NavigationState.GuideProfile -> {
+                if (isGuideLoggedIn) {
+                    ProfileScreen(
+                        userName = userName,
+                        userHandle = userHandle,
+                        userEmail = userEmail,
+                        userPhone = userPhone,
+                        userAddress = userAddress,
+                        notificationEnabled = notificationEnabled,
+                        onProfileUpdate = { name, handle, email, phone, address, notify ->
+                            userName = name
+                            userHandle = handle
+                            userEmail = email
+                            userPhone = phone
+                            userAddress = address
+                            notificationEnabled = notify
+                        },
+                        modifier = Modifier.padding(innerPadding),
+                        onBack = {
+                            navState = NavigationState.GuideHome
+                            guideHomeTab = 4
+                        },
+                        onLogout = guideLogout,
+                        onFloraSettingsClick = {
+                            subScreenReturnState = NavigationState.GuideProfile
+                            subScreenReturnTab = 4
+                            navState = NavigationState.FloraSettings
+                        },
+                        onNotificationsClick = {
+                            subScreenReturnState = NavigationState.GuideProfile
+                            subScreenReturnTab = 4
+                            navState = NavigationState.Notifications
+                        }
+                    )
+                } else {
+                    LaunchedEffect(Unit) { navState = NavigationState.Login }
+                }
+            }
+            NavigationState.Support -> {
+                if (isAuthenticated) {
+                    SupportScreen(
+                        modifier = Modifier.padding(innerPadding),
+                        onBack = {
+                            if (isGuideLoggedIn && subScreenReturnState == NavigationState.MainApp) {
+                                navState = NavigationState.GuideHome
+                                guideHomeTab = 4
+                            } else {
+                                navigateBackFromSubScreen()
+                            }
+                        },
+                        onLogout = {
+                            if (isGuideLoggedIn) {
+                                guideLogout()
+                            } else {
+                                sessionManager.clearSession()
+                                isLoggedIn = false
+                                navState = NavigationState.MainApp
+                                selectedTab = 0
+                            }
+                        }
+                    )
+                } else {
+                    LaunchedEffect(Unit) { navState = NavigationState.Login }
+                }
+            }
+            NavigationState.GroupChat -> GroupCommunicationScreen(
+                bookingId = chatBookingId,
+                onBack = {
+                    navState = chatReturnState
+                    if (chatReturnState == NavigationState.MainApp) {
+                        selectedTab = chatReturnTab
+                    }
+                }
+            )
+            NavigationState.Notifications -> NotificationsScreen(
+                onBack = {
+                    if (isGuideLoggedIn && subScreenReturnState == NavigationState.MainApp) {
+                        navState = NavigationState.GuideHome
+                        guideHomeTab = 4
+                    } else {
+                        navigateBackFromSubScreen()
+                    }
+                }
+            )
             NavigationState.MainApp -> {
                 when (selectedTab) {
                     0 -> HomepageScreen(
@@ -323,7 +516,13 @@ fun AppNavigation() {
                             ScheduleScreen(
                                 modifier = Modifier.padding(innerPadding),
                                 onBack = onBackToHome,
-                                onProfileClick = onGoToProfile
+                                onProfileClick = onGoToProfile,
+                                onOpenGroupChat = { id ->
+                                    chatBookingId = id
+                                    chatReturnState = NavigationState.MainApp
+                                    chatReturnTab = 1
+                                    navState = NavigationState.GroupChat
+                                }
                             )
                         } else {
                             LaunchedEffect(Unit) { navState = NavigationState.Login }
@@ -374,7 +573,14 @@ fun AppNavigation() {
                                     selectedTab = 0
                                 },
                                 onFloraSettingsClick = {
+                                    subScreenReturnState = NavigationState.MainApp
+                                    subScreenReturnTab = 4
                                     navState = NavigationState.FloraSettings
+                                },
+                                onNotificationsClick = {
+                                    subScreenReturnState = NavigationState.MainApp
+                                    subScreenReturnTab = 4
+                                    navState = NavigationState.Notifications
                                 }
                             )
                         } else {

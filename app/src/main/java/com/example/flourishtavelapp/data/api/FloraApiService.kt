@@ -1,13 +1,13 @@
-package com.example.flourishtavelapp.data.api
+﻿package com.example.flourishtravelapp.data.api
 
-import com.example.flourishtavelapp.data.model.FloraJourneyResponse
-import com.example.flourishtavelapp.data.model.FloraNearbyApiResponse
-import com.example.flourishtavelapp.data.model.FloraNearbyRecommendationRequest
-import com.example.flourishtavelapp.data.model.FloraPostTourFeedbackApiResponse
-import com.example.flourishtavelapp.data.model.FloraPreferencePreviewApiResponse
-import com.example.flourishtavelapp.data.model.FloraPreferencePreviewRequest
-import com.example.flourishtavelapp.data.model.FloraPreferencesApiResponse
-import com.example.flourishtavelapp.data.model.UpdateTravelPreferencesRequest
+import com.example.flourishtravelapp.data.model.FloraJourneyResponse
+import com.example.flourishtravelapp.data.model.FloraNearbyApiResponse
+import com.example.flourishtravelapp.data.model.FloraNearbyRecommendationRequest
+import com.example.flourishtravelapp.data.model.FloraPostTourFeedbackApiResponse
+import com.example.flourishtravelapp.data.model.FloraPreferencePreviewApiResponse
+import com.example.flourishtravelapp.data.model.FloraPreferencePreviewRequest
+import com.example.flourishtravelapp.data.model.FloraPreferencesApiResponse
+import com.example.flourishtravelapp.data.model.UpdateTravelPreferencesRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET

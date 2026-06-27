@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.location
+﻿package com.example.flourishtravelapp.location
 
 interface LocationProvider {
     suspend fun getForegroundLocation(timeoutMs: Long = DEFAULT_TIMEOUT_MS): MobileLocationResult

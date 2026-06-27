@@ -1,6 +1,6 @@
-package com.example.flourishtavelapp.data.api
+﻿package com.example.flourishtravelapp.data.api
 
-import com.example.flourishtavelapp.data.model.*
+import com.example.flourishtravelapp.data.model.*
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -15,6 +15,9 @@ interface BookingApiService {
     
     @GET("bookings/me")
     suspend fun getMyBookings(): Response<ApiResponseBookingList>
+
+    @GET("bookings/{id}")
+    suspend fun getBookingDetail(@Path("id") id: String): Response<ApiResponseBookingDetail>
     
     @POST("bookings/{id}/cancel")
     suspend fun cancelBooking(@Path("id") id: String): Response<ApiResponseVoid>

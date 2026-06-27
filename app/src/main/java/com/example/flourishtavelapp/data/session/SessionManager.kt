@@ -1,8 +1,8 @@
-package com.example.flourishtavelapp.data.session
+﻿package com.example.flourishtravelapp.data.session
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.example.flourishtavelapp.data.model.UserInfo
+import com.example.flourishtravelapp.data.model.UserInfo
 
 class SessionManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)

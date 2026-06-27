@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+﻿package com.example.flourishtravelapp.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -52,19 +52,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.data.api.RetrofitClient
-import com.example.flourishtavelapp.data.model.TravelPreferencesDto
-import com.example.flourishtavelapp.data.preferences.FloraPreferencesMapper
-import com.example.flourishtavelapp.data.repository.FloraPreferenceRepository
-import com.example.flourishtavelapp.data.repository.PreferenceLoadResult
-import com.example.flourishtavelapp.data.repository.PreferenceSaveResult
-import com.example.flourishtavelapp.data.session.SessionManager
-import com.example.flourishtavelapp.location.LocationPermissionHelper
-import com.example.flourishtavelapp.push.DevicePushPolicy
-import com.example.flourishtavelapp.push.PushTokenRepository
-import com.example.flourishtavelapp.ui.theme.NatureGreenBackground
-import com.example.flourishtavelapp.ui.theme.PrimaryGreen
-import com.example.flourishtavelapp.ui.theme.SecondaryTextColor
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.TravelPreferencesDto
+import com.example.flourishtravelapp.data.preferences.FloraPreferencesMapper
+import com.example.flourishtravelapp.data.repository.FloraPreferenceRepository
+import com.example.flourishtravelapp.data.repository.PreferenceLoadResult
+import com.example.flourishtravelapp.data.repository.PreferenceSaveResult
+import com.example.flourishtravelapp.data.session.SessionManager
+import com.example.flourishtravelapp.location.LocationPermissionHelper
+import com.example.flourishtravelapp.push.DevicePushPolicy
+import com.example.flourishtravelapp.push.PushTokenRepository
+import com.example.flourishtravelapp.ui.theme.NatureGreenBackground
+import com.example.flourishtravelapp.ui.theme.PrimaryGreen
+import com.example.flourishtravelapp.ui.theme.SecondaryTextColor
 import kotlinx.coroutines.launch
 
 private val TRAVEL_STYLE_OPTIONS = listOf(

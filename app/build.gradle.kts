@@ -20,11 +20,11 @@ if (envFile.exists()) {
 val apiUrl = env.getProperty("VITE_API_URL") ?: "https://flourishtravel-rtdye.ondigitalocean.app/api"
 
 android {
-    namespace = "com.example.flourishtavelapp"
+    namespace = "com.example.flourishtravelapp"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.flourishtavelapp"
+        applicationId = "com.example.flourishtravelapp"
         minSdk = 24
         targetSdk = 35
         versionCode = 1

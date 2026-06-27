@@ -1,7 +1,7 @@
-package com.example.flourishtavelapp.data.api
+﻿package com.example.flourishtravelapp.data.api
 
-import com.example.flourishtavelapp.BuildConfig
-import com.example.flourishtavelapp.data.session.SessionManager
+import com.example.flourishtravelapp.BuildConfig
+import com.example.flourishtravelapp.data.session.SessionManager
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -134,5 +134,41 @@ object RetrofitClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(PushDeviceApiService::class.java)
+    }
+
+    val guideApiService: GuideApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(GuideApiService::class.java)
+    }
+
+    val catalogApiService: CatalogApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(CatalogApiService::class.java)
+    }
+
+    val chatApiService: ChatApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ChatApiService::class.java)
+    }
+
+    val notificationApiService: NotificationApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(NotificationApiService::class.java)
     }
 }

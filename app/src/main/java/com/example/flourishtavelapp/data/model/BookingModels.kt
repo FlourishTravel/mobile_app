@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.data.model
+﻿package com.example.flourishtravelapp.data.model
 
 import com.google.gson.annotations.SerializedName
 
@@ -97,6 +97,52 @@ data class ApiResponseBookingList(
     @SerializedName("success") val success: Boolean,
     @SerializedName("message") val message: String?,
     @SerializedName("data") val data: List<BookingSummary>?
+)
+
+data class UserBookingGuestLineDto(
+    @SerializedName("guestId") val guestId: String?,
+    @SerializedName("fullName") val fullName: String?,
+    @SerializedName("maskedIdNumber") val maskedIdNumber: String?,
+    @SerializedName("dateOfBirth") val dateOfBirth: String?,
+    @SerializedName("sortOrder") val sortOrder: Int?
+)
+
+data class UserBookingDetailDto(
+    @SerializedName("bookingId") val bookingId: String?,
+    @SerializedName("bookingStatus") val bookingStatus: String?,
+    @SerializedName("guestCount") val guestCount: Int?,
+    @SerializedName("totalAmount") val totalAmount: Double?,
+    @SerializedName("discountAmount") val discountAmount: Double?,
+    @SerializedName("bookedAt") val bookedAt: String?,
+    @SerializedName("sessionStartDate") val sessionStartDate: String?,
+    @SerializedName("sessionEndDate") val sessionEndDate: String?,
+    @SerializedName("tourId") val tourId: String?,
+    @SerializedName("tourTitle") val tourTitle: String?,
+    @SerializedName("tourThumbnailUrl") val tourThumbnailUrl: String?,
+    @SerializedName("tourDurationDays") val tourDurationDays: Int?,
+    @SerializedName("tourDurationNights") val tourDurationNights: Int?,
+    @SerializedName("categoryName") val categoryName: String?,
+    @SerializedName("customerEmail") val customerEmail: String?,
+    @SerializedName("customerPhone") val customerPhone: String?,
+    @SerializedName("paymentStatus") val paymentStatus: String?,
+    @SerializedName("paymentOrderId") val paymentOrderId: String?,
+    @SerializedName("refundPending") val refundPending: Boolean = false,
+    @SerializedName("promotionCode") val promotionCode: String?,
+    @SerializedName("specialRequests") val specialRequests: String?,
+    @SerializedName("contactPhone") val contactPhone: String?,
+    @SerializedName("pickupAddress") val pickupAddress: String?,
+    @SerializedName("guestNames") val guestNames: String?,
+    @SerializedName("emergencyContactName") val emergencyContactName: String?,
+    @SerializedName("emergencyContactPhone") val emergencyContactPhone: String?,
+    @SerializedName("guideName") val guideName: String?,
+    @SerializedName("continuePaymentUrl") val continuePaymentUrl: String?,
+    @SerializedName("guests") val guests: List<UserBookingGuestLineDto>?
+)
+
+data class ApiResponseBookingDetail(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: UserBookingDetailDto?
 )
 
 

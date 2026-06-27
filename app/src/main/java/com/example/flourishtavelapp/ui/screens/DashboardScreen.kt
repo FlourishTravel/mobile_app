@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+﻿package com.example.flourishtravelapp.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,7 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.ui.theme.*
+import com.example.flourishtravelapp.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -217,7 +217,7 @@ fun DashboardScreen(userName: String, modifier: Modifier = Modifier, onBack: () 
             ) {
                 Box {
                     Image(
-                        painter = painterResource(id = com.example.flourishtavelapp.R.drawable.travel_bg),
+                        painter = painterResource(id = com.example.flourishtravelapp.R.drawable.travel_bg),
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop

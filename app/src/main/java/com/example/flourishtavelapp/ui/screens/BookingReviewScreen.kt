@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+﻿package com.example.flourishtravelapp.ui.screens
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -21,10 +21,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.ui.theme.*
-import com.example.flourishtavelapp.data.api.RetrofitClient
-import com.example.flourishtavelapp.data.model.ValidateSessionRequest
-import com.example.flourishtavelapp.data.model.ValidatePromoRequest
+import com.example.flourishtravelapp.ui.theme.*
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.ValidateSessionRequest
+import com.example.flourishtravelapp.data.model.ValidatePromoRequest
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,7 +33,7 @@ fun BookingReviewScreen(
     initialAdultCount: Int,
     initialChildCount: Int,
     onBack: () -> Unit,
-    onProceed: (Int, Int, String, String?, Long) -> Unit, // added sessionId, promoCode, promoDiscount
+    onProceed: (Int, Int, String, String?, Long, String) -> Unit, // sessionId, promoCode, promoDiscount, paymentMethod
     initialTourId: String? = null,
     initialSessionId: String? = null,
     modifier: Modifier = Modifier
@@ -162,7 +162,7 @@ fun BookingReviewScreen(
                 ) {
                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Image(
-                            painter = painterResource(id = com.example.flourishtavelapp.R.drawable.maya_bg),
+                            painter = painterResource(id = com.example.flourishtravelapp.R.drawable.maya_bg),
                             contentDescription = null,
                             modifier = Modifier.size(100.dp).clip(RoundedCornerShape(24.dp)),
                             contentScale = ContentScale.Crop
@@ -381,7 +381,8 @@ fun BookingReviewScreen(
                                         childCount,
                                         sessionId,
                                         if (promoDiscountAmount > 0) promoCodeInput.trim() else null,
-                                        discountAmount
+                                        discountAmount,
+                                        selectedPaymentMethod
                                     )
                                 } else {
                                     apiError = result?.message ?: "Phiên đặt tour đã đầy hoặc không khả dụng!"

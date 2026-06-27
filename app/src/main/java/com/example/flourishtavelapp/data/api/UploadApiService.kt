@@ -1,6 +1,6 @@
-package com.example.flourishtavelapp.data.api
+﻿package com.example.flourishtravelapp.data.api
 
-import com.example.flourishtavelapp.data.model.ApiResponseString
+import com.example.flourishtravelapp.data.model.ApiResponseString
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Multipart

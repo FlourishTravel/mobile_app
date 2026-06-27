@@ -1,12 +1,12 @@
-package com.example.flourishtavelapp.data.repository
+﻿package com.example.flourishtravelapp.data.repository
 
-import com.example.flourishtavelapp.data.api.FloraApiService
-import com.example.flourishtavelapp.data.api.ReviewApiService
-import com.example.flourishtavelapp.data.model.CreateReviewRequest
-import com.example.flourishtavelapp.data.model.FloraPostTourFeedbackContextDto
-import com.example.flourishtavelapp.data.model.FloraPreferencePreviewDto
-import com.example.flourishtavelapp.data.model.FloraPreferencePreviewRequest
-import com.example.flourishtavelapp.data.model.UpdateTravelPreferencesRequest
+import com.example.flourishtravelapp.data.api.FloraApiService
+import com.example.flourishtravelapp.data.api.ReviewApiService
+import com.example.flourishtravelapp.data.model.CreateReviewRequest
+import com.example.flourishtravelapp.data.model.FloraPostTourFeedbackContextDto
+import com.example.flourishtravelapp.data.model.FloraPreferencePreviewDto
+import com.example.flourishtravelapp.data.model.FloraPreferencePreviewRequest
+import com.example.flourishtravelapp.data.model.UpdateTravelPreferencesRequest
 import java.io.IOException
 
 class FloraPostTourFeedbackRepository(

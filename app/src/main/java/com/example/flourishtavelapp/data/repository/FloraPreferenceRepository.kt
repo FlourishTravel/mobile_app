@@ -1,9 +1,9 @@
-package com.example.flourishtavelapp.data.repository
+﻿package com.example.flourishtravelapp.data.repository
 
-import com.example.flourishtavelapp.data.api.FloraApiService
-import com.example.flourishtavelapp.data.model.TravelPreferencesDto
-import com.example.flourishtavelapp.data.model.UpdateTravelPreferencesRequest
-import com.example.flourishtavelapp.data.preferences.FloraPreferencesMapper
+import com.example.flourishtravelapp.data.api.FloraApiService
+import com.example.flourishtravelapp.data.model.TravelPreferencesDto
+import com.example.flourishtravelapp.data.model.UpdateTravelPreferencesRequest
+import com.example.flourishtravelapp.data.preferences.FloraPreferencesMapper
 import java.io.IOException
 
 class FloraPreferenceRepository(

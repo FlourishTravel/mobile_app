@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+﻿package com.example.flourishtravelapp.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
@@ -20,8 +20,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.ui.theme.*
-import com.example.flourishtavelapp.data.session.SessionManager
+import com.example.flourishtravelapp.ui.theme.*
+import com.example.flourishtravelapp.data.session.SessionManager
 
 @Composable
 fun PaymentInfoScreen(
@@ -122,7 +122,7 @@ fun PaymentInfoScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Box {
                             Image(
-                                painter = painterResource(id = com.example.flourishtavelapp.R.drawable.maya_bg),
+                                painter = painterResource(id = com.example.flourishtravelapp.R.drawable.maya_bg),
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(24.dp)),
                                 contentScale = ContentScale.Crop

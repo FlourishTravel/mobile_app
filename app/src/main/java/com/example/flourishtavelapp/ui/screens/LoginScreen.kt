@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -17,15 +17,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.ui.theme.*
-import com.example.flourishtavelapp.data.api.RetrofitClient
-import com.example.flourishtavelapp.data.model.LoginRequest
-import com.example.flourishtavelapp.data.session.SessionManager
-import com.example.flourishtavelapp.data.model.UserInfo
+import com.example.flourishtravelapp.ui.theme.*
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.LoginRequest
+import com.example.flourishtravelapp.data.session.SessionManager
+import com.example.flourishtravelapp.data.model.UserInfo
+import com.example.flourishtravelapp.data.model.isTourGuideRole
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.clip
-import com.example.flourishtavelapp.R
+import com.example.flourishtravelapp.R
 
 import androidx.activity.compose.BackHandler
 
@@ -213,7 +214,7 @@ fun LoginScreen(
                                                 authData.refreshToken,
                                                 authData.user
                                             )
-                                            if (authData.user.role.equals("GUIDE", ignoreCase = true)) {
+                                            if (authData.user.role.isTourGuideRole()) {
                                                 onGuideLoginSuccess(authData.user)
                                             } else {
                                                 onLoginSuccess(authData.user)
@@ -286,7 +287,7 @@ fun LoginScreen(
                                         val apiResponse = response.body()!!
                                         val authData = apiResponse.data
                                         if (authData != null) {
-                                            if (authData.user.role.equals("GUIDE", ignoreCase = true)) {
+                                            if (authData.user.role.isTourGuideRole()) {
                                                 sessionManager.saveSession(
                                                     authData.accessToken,
                                                     authData.refreshToken,

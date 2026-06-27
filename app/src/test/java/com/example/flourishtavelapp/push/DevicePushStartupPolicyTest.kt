@@ -1,4 +1,4 @@
-package com.example.flourishtavelapp.push
+﻿package com.example.flourishtravelapp.push
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -20,7 +20,7 @@ class DevicePushStartupPolicyTest {
 
     @Test
     fun mainActivity_doesNotRequestNotificationPermissionOnCreate() {
-        val main = File("src/main/java/com/example/flourishtavelapp/MainActivity.kt")
+        val main = File("src/main/java/com/example/flourishtravelapp/MainActivity.kt")
         val text = main.readText()
         assertFalse(text.contains("POST_NOTIFICATIONS"))
         assertFalse(text.contains("RequestPermission"))

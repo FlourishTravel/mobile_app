@@ -1,5 +1,7 @@
-package com.example.flourishtavelapp.ui.screens
+﻿package com.example.flourishtravelapp.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
@@ -22,10 +24,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.flourishtavelapp.ui.theme.*
-import com.example.flourishtavelapp.data.api.RetrofitClient
-import com.example.flourishtavelapp.data.model.CreateBookingRequest
-import com.example.flourishtavelapp.data.model.GuestItem
+import com.example.flourishtravelapp.ui.theme.*
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.CreateBookingRequest
+import com.example.flourishtravelapp.data.model.GuestItem
 import kotlinx.coroutines.launch
 
 @Composable
@@ -43,6 +45,7 @@ fun BankTransferScreen(
     bookingIdCard: String,
     bookingGender: String,
     bookingNote: String,
+    paymentMethod: String = "Bank Transfer",
     modifier: Modifier = Modifier
 ) {
     // Hardware back press behavior
@@ -62,6 +65,21 @@ fun BankTransferScreen(
     var isProcessing by remember { mutableStateOf(false) }
     var apiError by remember { mutableStateOf<String?>(null) }
 
+    val isOnlinePayment = paymentMethod == "Online Payment"
+
+    suspend fun openPaymentUrl(bookingId: String, paymentUrl: String?) {
+        var url = paymentUrl
+        if (url.isNullOrBlank()) {
+            val momoResponse = RetrofitClient.bookingApiService.getMomoPaymentUrl(bookingId)
+            if (momoResponse.isSuccessful && momoResponse.body()?.success == true) {
+                url = momoResponse.body()?.data?.paymentUrl
+            }
+        }
+        if (!url.isNullOrBlank()) {
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize().background(NatureGreenBackground)) {
         Column(
             modifier = Modifier
@@ -80,7 +98,7 @@ fun BankTransferScreen(
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    "Thanh toán",
+                    if (isOnlinePayment) "Thanh toán MoMo" else "Thanh toán",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = DarkTextColor
@@ -134,6 +152,18 @@ fun BankTransferScreen(
                     Text("%,dđ".format(finalTotal), fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = DarkTextColor)
                     
                     Spacer(modifier = Modifier.height(24.dp))
+
+                    if (isOnlinePayment) {
+                        Icon(Icons.Default.AccountBalanceWallet, null, tint = PrimaryGreen, modifier = Modifier.size(80.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Vui lòng hoàn tất thanh toán trong ứng dụng MoMo sau khi nhấn nút bên dưới.",
+                            color = SecondaryTextColor,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 20.sp
+                        )
+                    } else {
                     
                     // QR Code Graphic
                     Box(
@@ -213,6 +243,7 @@ fun BankTransferScreen(
                             }
                         }
                     }
+                    }
                 }
             }
 
@@ -282,7 +313,7 @@ fun BankTransferScreen(
                             guests = guestsList,
                             emergencyContactName = bookingName,
                             emergencyContactPhone = bookingPhone,
-                            paymentMethod = "Bank Transfer"
+                            paymentMethod = if (paymentMethod == "Online Payment") "ewallet" else "bank"
                         )
 
                         try {
@@ -290,6 +321,9 @@ fun BankTransferScreen(
                             if (response.isSuccessful && response.body()?.success == true) {
                                 val bookingData = response.body()?.data
                                 if (bookingData != null) {
+                                    if (isOnlinePayment) {
+                                        openPaymentUrl(bookingData.bookingId, bookingData.paymentUrl)
+                                    }
                                     onComplete(bookingData.bookingId, bookingData.orderId)
                                 } else {
                                     apiError = "Lỗi phản hồi: Dữ liệu đặt tour trống!"
@@ -314,7 +348,11 @@ fun BankTransferScreen(
                 if (isProcessing) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("Tôi đã chuyển khoản", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(
+                        if (isOnlinePayment) "Thanh toán qua MoMo" else "Tôi đã chuyển khoản",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
                 }
             }
         }
