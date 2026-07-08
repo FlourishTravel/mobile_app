@@ -1,6 +1,7 @@
 package com.example.flourishtravelapp.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -67,6 +68,7 @@ data class TravelActivity(
 
 private val WEB_ACTIVITY_CATEGORIES = listOf(
     ActivityCategory("all", "Tất cả", Icons.Outlined.Apps),
+    ActivityCategory("tour", "Tour", Icons.Outlined.Map),
     ActivityCategory("attraction", "Điểm tham quan", Icons.Outlined.Landscape),
     ActivityCategory("show", "Show & vui chơi", Icons.Outlined.TheaterComedy),
     ActivityCategory("transport", "Di chuyển", Icons.Outlined.DirectionsBus)
@@ -74,6 +76,8 @@ private val WEB_ACTIVITY_CATEGORIES = listOf(
 
 private val NON_DESTINATION_LABELS = setOf(
     "Tất cả",
+    "Tour",
+    "Trải nghiệm",
     "Điểm tham quan",
     "Show & vui chơi",
     "Di chuyển",
@@ -85,10 +89,11 @@ private val NON_DESTINATION_LABELS = setOf(
 )
 
 private fun initialCategoryFromLabel(label: String): String = when {
-    label.equals("Transport", ignoreCase = true) -> "Di chuyển"
+    label.equals("Tour", ignoreCase = true) -> "Tour"
+    label.equals("Trải nghiệm", ignoreCase = true) -> "Tất cả"
+    label.equals("Transport", ignoreCase = true) || label.equals("Di chuyển", ignoreCase = true) -> "Di chuyển"
     label.equals("Điểm tham quan", ignoreCase = true) -> "Điểm tham quan"
     label.contains("Show", ignoreCase = true) || label.contains("vui chơi", ignoreCase = true) -> "Show & vui chơi"
-    label.equals("Di chuyển", ignoreCase = true) -> "Di chuyển"
     else -> "Tất cả"
 }
 
@@ -120,9 +125,36 @@ fun ActivitiesScreen(
 
     val categories = remember { WEB_ACTIVITY_CATEGORIES }
 
-    var selectedCategory by remember(initialCategoryLabel) {
-        mutableStateOf(initialCategoryFromLabel(initialCategoryLabel))
+    val isTourMode = remember(initialCategoryLabel) {
+        initialCategoryLabel.equals("Tour", ignoreCase = true)
     }
+
+    val subcategories = remember(isTourMode) {
+        if (isTourMode) {
+            listOf(
+                "Tất cả tour",
+                "Tour biển",
+                "Khám phá",
+                "Thái Lan",
+                "Tham quan",
+                "Tour xuyên quốc gia",
+                "Tour yêu thích"
+            )
+        } else {
+            listOf(
+                "Tất cả",
+                "Vé tham quan",
+                "Hoạt động",
+                "Combo du lịch",
+                "Workshop / Event"
+            )
+        }
+    }
+
+    var selectedSubcategory by remember(isTourMode) {
+        mutableStateOf(if (isTourMode) "Tất cả tour" else "Tất cả")
+    }
+
     var searchQuery by remember(initialCategoryLabel) {
         mutableStateOf(initialSearchFromLabel(initialCategoryLabel))
     }
@@ -131,12 +163,12 @@ fun ActivitiesScreen(
     var isLoadingActivities by remember { mutableStateOf(true) }
     var activitiesError by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(selectedCategory, searchQuery) {
+    LaunchedEffect(isTourMode, searchQuery) {
         isLoadingActivities = true
         activitiesError = null
         try {
             val response = RetrofitClient.catalogApiService.getTickets(
-                category = categoryLabelToApiParam(selectedCategory),
+                category = if (isTourMode) "tour" else null,
                 destination = destinationApiParam(searchQuery)
             )
             if (response.isSuccessful && response.body()?.success == true) {
@@ -153,22 +185,65 @@ fun ActivitiesScreen(
         }
     }
 
-    val activities = remember(initialCategoryLabel, rawActivities) {
-        if (initialCategoryLabel.isEmpty()) {
-            rawActivities
-        } else {
-            val newList = ArrayList(rawActivities)
-            val matchedIndex = newList.indexOfFirst {
-                it.keyword.contains(initialCategoryLabel, ignoreCase = true) ||
-                    initialCategoryLabel.contains(it.keyword, ignoreCase = true) ||
-                    it.title.contains(initialCategoryLabel, ignoreCase = true) ||
-                    it.location.contains(initialCategoryLabel, ignoreCase = true)
+    val activities = remember(selectedSubcategory, rawActivities) {
+        when (selectedSubcategory) {
+            // Tour mode subcategories
+            "Tất cả tour" -> rawActivities
+            "Tour biển" -> rawActivities.filter {
+                val text = "${it.title} ${it.promoText.orEmpty()} ${it.routeLabel.orEmpty()}".lowercase()
+                text.contains("biển") || text.contains("đảo") || text.contains("sea") || 
+                text.contains("phi phi") || text.contains("beach") || text.contains("vịnh")
             }
-            if (matchedIndex != -1) {
-                val matchedItem = newList.removeAt(matchedIndex)
-                newList.add(0, matchedItem)
+            "Khám phá" -> rawActivities.filter {
+                val text = "${it.title} ${it.promoText.orEmpty()} ${it.location}".lowercase()
+                text.contains("khám phá") || text.contains("explore") || text.contains("wat") || 
+                text.contains("palace") || text.contains("temple") || text.contains("chùa")
             }
-            newList
+            "Thái Lan" -> rawActivities.filter {
+                val text = "${it.title} ${it.location} ${it.promoText.orEmpty()} ${it.routeLabel.orEmpty()}".lowercase()
+                text.contains("thái lan") || text.contains("bangkok") || text.contains("chiang mai") || 
+                text.contains("phuket") || text.contains("pattaya") || text.contains("thailand")
+            }
+            "Tham quan" -> rawActivities.filter {
+                val text = "${it.title} ${it.promoText.orEmpty()} ${it.location}".lowercase()
+                text.contains("tham quan") || text.contains("tour") || text.contains("sightseeing") || text.contains("trip")
+            }
+            "Tour xuyên quốc gia" -> rawActivities.filter {
+                val text = "${it.title} ${it.promoText.orEmpty()} ${it.routeLabel.orEmpty()}".lowercase()
+                text.contains("xuyên quốc gia") || text.contains("xuyên") || text.contains("cross") || 
+                text.contains("multi-country") || text.contains("quốc tế")
+            }
+            "Tour yêu thích" -> rawActivities.filter {
+                it.rating.toDoubleOrNull()?.let { r -> r >= 4.8 } ?: false || it.bookedCount.contains("nổi bật", ignoreCase = true)
+            }
+            
+            // Experience mode subcategories
+            "Tất cả" -> rawActivities
+            "Vé tham quan" -> rawActivities.filter {
+                it.categoryId.equals("attraction", ignoreCase = true) || 
+                "${it.title} ${it.promoText.orEmpty()}".lowercase().let { text ->
+                    text.contains("vé") || text.contains("tham quan") || text.contains("cổng") || 
+                    text.contains("admission") || text.contains("ticket") || text.contains("attraction")
+                }
+            }
+            "Hoạt động" -> rawActivities.filter {
+                it.categoryId.equals("show", ignoreCase = true) || 
+                "${it.title} ${it.promoText.orEmpty()}".lowercase().let { text ->
+                    text.contains("hoạt động") || text.contains("show") || text.contains("biểu diễn") || 
+                    text.contains("vui chơi") || text.contains("trải nghiệm") || text.contains("activity") || 
+                    text.contains("performance")
+                }
+            }
+            "Combo du lịch" -> rawActivities.filter {
+                val text = "${it.title} ${it.promoText.orEmpty()}".lowercase()
+                text.contains("combo") || text.contains("trọn gói") || text.contains("pack")
+            }
+            "Workshop / Event" -> rawActivities.filter {
+                val text = "${it.title} ${it.promoText.orEmpty()}".lowercase()
+                text.contains("workshop") || text.contains("event") || text.contains("sự kiện") || 
+                text.contains("lớp") || text.contains("học")
+            }
+            else -> rawActivities
         }
     }
 
@@ -283,36 +358,24 @@ fun ActivitiesScreen(
             Spacer(modifier = Modifier.height(18.dp))
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(horizontal = 20.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                items(categories) { cat ->
-                    val isSelected = selectedCategory == cat.label
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.clickable { selectedCategory = cat.label }
+                items(subcategories) { sub ->
+                    val isSelected = selectedSubcategory == sub
+                    Surface(
+                        modifier = Modifier.clickable { selectedSubcategory = sub },
+                        shape = RoundedCornerShape(20.dp),
+                        border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        color = if (isSelected) PrimaryGreen else Color.White
                     ) {
-                        Surface(
-                            modifier = Modifier.size(50.dp),
-                            shape = CircleShape,
-                            color = if (isSelected) Color(0xFFE8F5E9) else Color(0xFFF5F5F5)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    cat.icon,
-                                    null,
-                                    tint = if (isSelected) PrimaryGreen else Color(0xFF555555),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = cat.label,
-                            fontSize = 11.sp,
+                            text = sub,
+                            fontSize = 14.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) PrimaryGreen else SecondaryTextColor
+                            color = if (isSelected) Color.White else DarkTextColor,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
                 }

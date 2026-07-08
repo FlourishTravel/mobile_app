@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -37,6 +37,7 @@ import com.example.flourishtravelapp.data.model.RegisterRequest
 import com.example.flourishtravelapp.data.session.SessionManager
 import com.example.flourishtravelapp.data.model.UserInfo
 import kotlinx.coroutines.launch
+import com.example.flourishtravelapp.R
 
 import androidx.activity.compose.BackHandler
 
@@ -331,9 +332,8 @@ fun RegisterScreen(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     SocialButton(
                         modifier = Modifier.weight(1f),
-                        iconRes = null, // Placeholder
-                        label = "Google",
-                        icon = Icons.Default.GTranslate
+                        iconRes = R.drawable.ic_google,
+                        label = "Google"
                     )
                     SocialButton(
                         modifier = Modifier.weight(1f),
@@ -416,7 +416,13 @@ fun RegisterField(
 }
 
 @Composable
-fun SocialButton(modifier: Modifier, iconRes: Int?, label: String, icon: ImageVector, iconColor: Color = Color.Unspecified) {
+fun SocialButton(
+    modifier: Modifier,
+    iconRes: Int?,
+    label: String,
+    icon: ImageVector? = null,
+    iconColor: Color = Color.Unspecified
+) {
     Surface(
         modifier = modifier.height(56.dp),
         shape = RoundedCornerShape(12.dp),
@@ -427,7 +433,15 @@ fun SocialButton(modifier: Modifier, iconRes: Int?, label: String, icon: ImageVe
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            Icon(icon, null, tint = iconColor, modifier = Modifier.size(20.dp))
+            if (iconRes != null) {
+                Image(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+            } else if (icon != null) {
+                Icon(icon, null, tint = iconColor, modifier = Modifier.size(20.dp))
+            }
             Spacer(modifier = Modifier.width(12.dp))
             Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp)
         }

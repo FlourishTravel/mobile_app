@@ -42,6 +42,7 @@ fun TicketCardDto.toTravelActivity(): TravelActivity {
 /** Map chip label → BE category param (giống web /activities). */
 fun categoryLabelToApiParam(label: String): String? = when {
     label.equals("Tất cả", ignoreCase = true) -> null
+    label.equals("Tour", ignoreCase = true) -> "tour"
     label.equals("Điểm tham quan", ignoreCase = true) -> "attraction"
     label.contains("Show", ignoreCase = true) || label.contains("vui chơi", ignoreCase = true) -> "show"
     label.equals("Di chuyển", ignoreCase = true) || label.equals("Transport", ignoreCase = true) -> "transport"
