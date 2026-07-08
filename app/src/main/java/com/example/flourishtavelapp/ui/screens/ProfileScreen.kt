@@ -217,13 +217,13 @@ fun ProfileScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // 1. Pinned Brown Gradient Header
+            // 1. Pinned Green Gradient Header
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color(0xFF9E6549), Color(0xFF7D4329))
+                            colors = listOf(PrimaryTeal, PrimaryGreen)
                         )
                     )
                     .statusBarsPadding()
@@ -370,25 +370,7 @@ fun ProfileScreen(
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Card 1: Rewards & Savings
-                ProfileCard(title = "Phần thưởng và tiết kiệm") {
-                    ProfileRowItem(
-                        icon = Icons.Outlined.ConfirmationNumber,
-                        title = "Khuyến mãi"
-                    )
-                    ProfileRowItem(
-                        icon = Icons.Outlined.Payments,
-                        title = "Thưởng hoàn tiền mặt",
-                        rightText = "0 đ"
-                    )
-                    ProfileRowItem(
-                        icon = Icons.Outlined.Paid,
-                        title = "Tiền Agoda",
-                        rightText = "0 đ"
-                    )
-                }
-
-                // Card 2: My Account
+                // Card 1: My Account
                 ProfileCard(title = "Tài khoản của tôi") {
                     ProfileRowItem(
                         icon = Icons.Default.Person,
@@ -400,119 +382,15 @@ fun ProfileScreen(
                         title = "Đổi mật khẩu",
                         onClick = { showChangePasswordDialog = true }
                     )
-                    ProfileRowItem(
-                        icon = Icons.Outlined.Comment,
-                        title = "Tin nhắn từ cơ sở lưu trú"
-                    )
-                    ProfileRowItem(
-                        icon = Icons.Outlined.FavoriteBorder,
-                        title = "Danh sách yêu thích"
-                    )
-                    ProfileRowItem(
-                        icon = Icons.Outlined.CreditCard,
-                        title = "Thông tin thẻ đã lưu của tôi"
-                    )
-                    ProfileRowItem(
-                        icon = Icons.Outlined.RateReview,
-                        title = "Nhận xét của tôi"
-                    )
                 }
 
-                // Card 3: Member Benefits
-                ProfileCard(title = "Quyền lợi thành viên") {
-                    ProfileRowItem(
-                        icon = Icons.Default.Stars,
-                        title = "AgodaVIP"
-                    )
-                    
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { }
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(22.dp)
-                                .background(Color(0xFF2C3E50), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "P",
-                                color = Color.White,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 11.sp
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = "PointsMAX",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            color = Color(0xFF1E293B)
-                        )
-                    }
-                }
-
-                // Card 4: Settings
+                // Card 2: Settings
                 ProfileCard(title = "Cài đặt") {
                     ProfileRowItem(
                         icon = Icons.Default.SmartToy,
                         title = "Cài đặt Flora AI",
                         rightText = "Quyền riêng tư",
                         onClick = onFloraSettingsClick
-                    )
-                    ProfileRowItem(
-                        icon = Icons.Default.Language,
-                        title = "Ngôn ngữ",
-                        rightText = "Tiếng Việt 🇻🇳"
-                    )
-                    ProfileRowItem(
-                        icon = Icons.Outlined.LocalOffer,
-                        title = "Giá hiển thị",
-                        rightText = "Theo mỗi đêm"
-                    )
-                    
-                    val currencyText = buildAnnotatedString {
-                        withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
-                            append("đ")
-                        }
-                        append(" | VND")
-                    }
-                    
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { }
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CurrencyExchange,
-                            contentDescription = null,
-                            tint = Color(0xFF2C3E50),
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = "Tiền tệ",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            color = Color(0xFF1E293B)
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(
-                            text = currencyText,
-                            color = Color(0xFF64748B),
-                            fontSize = 14.sp
-                        )
-                    }
-
-                    ProfileRowItem(
-                        icon = Icons.Default.LocationOn,
-                        title = "Khoảng cách",
-                        rightText = "km"
                     )
                     ProfileRowItem(
                         icon = Icons.Outlined.Notifications,
@@ -555,58 +433,13 @@ fun ProfileScreen(
                             onCheckedChange = { shakeToReport = it },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
-                                checkedTrackColor = Color(0xFF5D4037)
+                                checkedTrackColor = Color(0xFF81C784)
                             )
                         )
                     }
                 }
 
-                // Card 5: Host listing advertisement
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .clickable { },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = null,
-                            tint = Color(0xFF008234),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = "Đăng cơ sở lưu trú của mình lên Agoda",
-                            color = Color(0xFF008234),
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 15.sp
-                        )
-                    }
-                }
-
-                // Card 6: Help & Info
-                ProfileCard(title = "Trợ giúp và thông tin") {
-                    ProfileRowItem(
-                        icon = Icons.Default.Info,
-                        title = "Về chúng tôi"
-                    )
-                    ProfileRowItem(
-                        icon = Icons.Default.HeadsetMic,
-                        title = "Trung tâm Trợ giúp"
-                    )
-                }
-
-                // Card 7: Account Management
+                // Card 3: Account Management
                 ProfileCard(title = "Quản lý tài khoản") {
                     ProfileRowItem(
                         icon = Icons.Default.Delete,

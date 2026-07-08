@@ -366,35 +366,21 @@ fun LoginScreen(
                     ) {
                         // Circle 1: Google
                         SocialLoginCircle {
-                            Text(
-                                text = "G",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 22.sp,
-                                color = Color(0xFFEA4335) // Google Red
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_google),
+                                contentDescription = "Google Login",
+                                modifier = Modifier.size(28.dp)
                             )
                         }
                         
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(20.dp))
                         
-                        // Circle 2: Black Leaf (Apple Sprout Equivalent)
+                        // Circle 2: Facebook
                         SocialLoginCircle {
-                            Icon(
-                                imageVector = Icons.Default.Eco,
-                                contentDescription = "Apple Sprout",
-                                tint = Color.Black,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.width(16.dp))
-                        
-                        // Circle 3: Star Medal
-                        SocialLoginCircle {
-                            Icon(
-                                imageVector = Icons.Default.Stars,
-                                contentDescription = "Medal Badge",
-                                tint = Color.Black,
-                                modifier = Modifier.size(24.dp)
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_facebook),
+                                contentDescription = "Facebook Login",
+                                modifier = Modifier.size(28.dp)
                             )
                         }
                     }

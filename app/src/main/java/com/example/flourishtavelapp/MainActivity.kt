@@ -509,6 +509,13 @@ fun AppNavigation() {
                         onCategoryClick = { category ->
                             selectedCategoryForActivities = category
                             navState = NavigationState.Activities
+                        },
+                        onMyToursClick = {
+                            if (!isLoggedIn) {
+                                navState = NavigationState.Login
+                            } else {
+                                selectedTab = 1
+                            }
                         }
                     )
                     1 -> {

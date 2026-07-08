@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -46,7 +46,8 @@ fun HomepageScreen(
     onTourClick: (String) -> Unit, // Dynamic tour click with ID
     onAssistantClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onCategoryClick: (String) -> Unit
+    onCategoryClick: (String) -> Unit,
+    onMyToursClick: () -> Unit
 ) {
     val context = LocalContext.current
     var categoriesList by remember { mutableStateOf<List<Category>>(emptyList()) }
@@ -144,10 +145,9 @@ fun HomepageScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        QuickActionItem(icon = Icons.AutoMirrored.Outlined.AirplaneTicket, label = "Visa", onClick = { onCategoryClick("Visa") })
-                        QuickActionItem(icon = Icons.Outlined.DirectionsBus, label = "Transport", onClick = { onCategoryClick("Transport") })
-                        QuickActionItem(icon = Icons.Outlined.CurrencyExchange, label = "Currency", onClick = { onCategoryClick("Currency") })
-                        QuickActionItem(icon = Icons.Outlined.Cloud, label = "Weather", onClick = { onCategoryClick("Weather") })
+                        QuickActionItem(icon = Icons.Outlined.Map, label = "Tour", onClick = { onCategoryClick("Tour") })
+                        QuickActionItem(icon = Icons.Outlined.ConfirmationNumber, label = "Trải nghiệm", onClick = { onCategoryClick("Trải nghiệm") })
+                        QuickActionItem(icon = Icons.Outlined.Luggage, label = "Tour của tôi", onClick = { onMyToursClick() })
                     }
                 }
             }

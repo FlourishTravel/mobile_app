@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -26,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,6 +61,29 @@ fun TourDetailScreen(
     var adultCount by remember { mutableIntStateOf(2) }
     var childCount by remember { mutableIntStateOf(0) }
     var selectedDateIndex by remember { mutableIntStateOf(0) }
+    var isCalendarOpen by remember { mutableStateOf(false) }
+    var calendarMonth by remember { mutableIntStateOf(6) } // Default to July (0-indexed 6)
+    var calendarYear by remember { mutableIntStateOf(2026) }
+
+    val openCalendar = {
+        val selectedSession = tourDetail?.sessions?.getOrNull(selectedDateIndex)
+        if (selectedSession != null) {
+            try {
+                val parser = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                val date = parser.parse(selectedSession.startDate)
+                if (date != null) {
+                    val cal = java.util.Calendar.getInstance()
+                    cal.time = date
+                    calendarMonth = cal.get(java.util.Calendar.MONTH)
+                    calendarYear = cal.get(java.util.Calendar.YEAR)
+                }
+            } catch (e: java.lang.Exception) {
+                e.printStackTrace()
+            }
+        }
+        isCalendarOpen = true
+    }
+
 
     LaunchedEffect(tourId) {
         isLoading = true
@@ -306,50 +331,86 @@ fun TourDetailScreen(
                                 if (detail.sessions.isNullOrEmpty()) {
                                     Text("Hiện không có lịch khởi hành cho tour này.", color = SecondaryTextColor, fontSize = 14.sp)
                                 } else {
-                                    Text("Chọn ngày khởi hành:", color = SecondaryTextColor, fontSize = 12.sp)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        detail.sessions!!.take(3).forEachIndexed { idx, session ->
-                                            val (month, day, weekday) = parseDateToParts(session.startDate)
-                                            val label = if (idx == 0) "Sớm nhất" else null
-                                            DateItem(
-                                                month = month, day = day, weekday = weekday, label = label,
-                                                isSelected = selectedDateIndex == idx,
-                                                modifier = Modifier.weight(1f),
-                                                onClick = { selectedDateIndex = idx }
-                                            )
-                                        }
-                                        // Calendar option
-                                        Surface(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(76.dp)
-                                                .clickable { },
-                                            shape = RoundedCornerShape(12.dp),
-                                            border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                                            color = Color.White
+                                    if (isCalendarOpen) {
+                                        CalendarSection(
+                                            detail = detail,
+                                            selectedDateIndex = selectedDateIndex,
+                                            calendarMonth = calendarMonth,
+                                            calendarYear = calendarYear,
+                                            onMonthChange = { month, year ->
+                                                calendarMonth = month
+                                                calendarYear = year
+                                            },
+                                            onDateSelected = { sessionIdx ->
+                                                selectedDateIndex = sessionIdx
+                                                isCalendarOpen = false
+                                            },
+                                            onClose = {
+                                                isCalendarOpen = false
+                                            }
+                                        )
+                                    } else {
+                                        Text("Chọn ngày khởi hành:", color = SecondaryTextColor, fontSize = 12.sp)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
-                                            Column(
-                                                horizontalAlignment = Alignment.CenterHorizontally,
-                                                verticalArrangement = Arrangement.Center,
-                                                modifier = Modifier.padding(4.dp)
+                                            val sessions = detail.sessions!!
+                                            val visibleSessions = if (sessions.size <= 3) {
+                                                sessions.mapIndexed { index, session -> Pair(index, session) }
+                                            } else {
+                                                val list = mutableListOf<Pair<Int, SessionDetail>>()
+                                                list.add(Pair(0, sessions[0]))
+                                                list.add(Pair(1, sessions[1]))
+                                                if (selectedDateIndex < 2) {
+                                                    list.add(Pair(2, sessions[2]))
+                                                } else {
+                                                    list.add(Pair(selectedDateIndex, sessions[selectedDateIndex]))
+                                                }
+                                                list
+                                            }
+
+                                            visibleSessions.forEach { (originalIdx, session) ->
+                                                val (month, day, weekday) = parseDateToParts(session.startDate)
+                                                val label = if (originalIdx == 0) "Sớm nhất" else null
+                                                DateItem(
+                                                    month = month, day = day, weekday = weekday, label = label,
+                                                    isSelected = selectedDateIndex == originalIdx,
+                                                    modifier = Modifier.weight(1f),
+                                                    onClick = { selectedDateIndex = originalIdx }
+                                                )
+                                            }
+
+                                            // Calendar option
+                                            Surface(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .height(76.dp)
+                                                    .clickable { openCalendar() },
+                                                shape = RoundedCornerShape(12.dp),
+                                                border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                                                color = Color.White
                                             ) {
-                                                Icon(
-                                                    Icons.Default.CalendarToday,
-                                                    null,
-                                                    tint = SecondaryTextColor,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                                Spacer(modifier = Modifier.height(4.dp))
-                                                Text(
-                                                    "Thêm ngày",
-                                                    fontSize = 10.sp,
-                                                    color = SecondaryTextColor,
-                                                    fontWeight = FontWeight.Bold
-                                                )
+                                                Column(
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    verticalArrangement = Arrangement.Center,
+                                                    modifier = Modifier.padding(4.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.CalendarToday,
+                                                        null,
+                                                        tint = SecondaryTextColor,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                    Text(
+                                                        "Thêm ngày",
+                                                        fontSize = 10.sp,
+                                                        color = SecondaryTextColor,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -990,4 +1051,214 @@ private fun parseDateToParts(dateStr: String): Triple<String, String, String> {
         e.printStackTrace()
     }
     return Triple("tháng 5", "28", "T5")
+}
+
+@Composable
+fun CalendarSection(
+    detail: TourDetailDto,
+    selectedDateIndex: Int,
+    calendarMonth: Int,
+    calendarYear: Int,
+    onMonthChange: (month: Int, year: Int) -> Unit,
+    onDateSelected: (sessionIdx: Int) -> Unit,
+    onClose: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+    ) {
+        // Close selection section header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Đóng phần chọn ngày",
+                color = PrimaryGreen,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onClose() }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Month / Year selector
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = {
+                    if (calendarMonth == 0) {
+                        onMonthChange(11, calendarYear - 1)
+                    } else {
+                        onMonthChange(calendarMonth - 1, calendarYear)
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                    contentDescription = "Tháng trước",
+                    tint = PrimaryGreen,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            val monthLabel = getMonthNameInVietnamese(calendarMonth)
+            Text(
+                text = "$monthLabel $calendarYear",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkTextColor
+            )
+
+            IconButton(
+                onClick = {
+                    if (calendarMonth == 11) {
+                        onMonthChange(0, calendarYear + 1)
+                    } else {
+                        onMonthChange(calendarMonth + 1, calendarYear)
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Tháng sau",
+                    tint = PrimaryGreen,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Weekday Headers
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            val headers = listOf("Th 2", "Th 3", "Th 4", "Th 5", "Th 6", "Th 7", "CN")
+            headers.forEach { header ->
+                Text(
+                    text = header,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = DarkTextColor
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Days Grid
+        val cal = java.util.Calendar.getInstance()
+        cal.set(java.util.Calendar.YEAR, calendarYear)
+        cal.set(java.util.Calendar.MONTH, calendarMonth)
+        cal.set(java.util.Calendar.DAY_OF_MONTH, 1)
+
+        val firstDayOfWeek = cal.get(java.util.Calendar.DAY_OF_WEEK)
+        val prefixDays = (firstDayOfWeek - java.util.Calendar.MONDAY + 7) % 7
+        val totalDays = cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
+
+        val daysList = mutableListOf<Int?>()
+        repeat(prefixDays) { daysList.add(null) }
+        for (i in 1..totalDays) {
+            daysList.add(i)
+        }
+
+        val rows = daysList.chunked(7)
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+            rows.forEach { rowDays ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    rowDays.forEach { day ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(1.2f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (day != null) {
+                                val dateStr = String.format(java.util.Locale.US, "%04d-%02d-%02d", calendarYear, calendarMonth + 1, day)
+                                val sessionIdx = detail.sessions?.indexOfFirst { it.startDate == dateStr } ?: -1
+                                val hasSession = sessionIdx != -1
+
+                                val isSelected = hasSession && sessionIdx == selectedDateIndex
+
+                                val dayText = day.toString()
+
+                                if (isSelected) {
+                                    Surface(
+                                        modifier = Modifier.size(36.dp),
+                                        shape = CircleShape,
+                                        color = PrimaryGreen
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = dayText,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                textDecoration = TextDecoration.Underline
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Text(
+                                        text = dayText,
+                                        color = if (hasSession) DarkTextColor else Color.LightGray.copy(alpha = 0.6f),
+                                        fontWeight = if (hasSession) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 14.sp,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .wrapContentHeight(Alignment.CenterVertically)
+                                            .clickable(enabled = hasSession) {
+                                                onDateSelected(sessionIdx)
+                                            }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (rowDays.size < 7) {
+                        repeat(7 - rowDays.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun getMonthNameInVietnamese(month: Int): String {
+    return when (month) {
+        0 -> "Tháng Một"
+        1 -> "Tháng Hai"
+        2 -> "Tháng Ba"
+        3 -> "Tháng Tư"
+        4 -> "Tháng Năm"
+        5 -> "Tháng Sáu"
+        6 -> "Tháng Bảy"
+        7 -> "Tháng Tám"
+        8 -> "Tháng Chín"
+        9 -> "Tháng Mười"
+        10 -> "Tháng Mười Một"
+        11 -> "Tháng Mười Hai"
+        else -> ""
+    }
 }
