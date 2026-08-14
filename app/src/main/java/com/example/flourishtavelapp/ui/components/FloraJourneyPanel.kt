@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.components
+package com.example.flourishtravelapp.ui.components
 
 import android.Manifest
 import android.content.Intent
@@ -258,7 +258,10 @@ private fun FloraJourneyContent(
             journey.currentActivity?.let { act ->
                 Text("Đang diễn ra: ${act.title ?: "—"}", fontWeight = FontWeight.SemiBold)
                 act.endAt?.let { Text("Đến $it", style = MaterialTheme.typography.bodySmall) }
-            } ?: journey.currentScheduleItem?.title?.let { Text("Hôm nay: $it") }
+            } ?: journey.currentScheduleItem?.title?.let {
+                val dayLabel = if (journey.journeyStatus.equals("UPCOMING", ignoreCase = true)) "Sắp tới" else "Hôm nay"
+                Text("$dayLabel: $it")
+            }
 
             journey.nextActivity?.let { act ->
                 Text("Tiếp theo: ${act.title ?: "—"}")
