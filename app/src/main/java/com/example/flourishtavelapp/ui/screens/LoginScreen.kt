@@ -29,6 +29,13 @@ import androidx.compose.ui.draw.clip
 import com.example.flourishtravelapp.R
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import com.example.flourishtravelapp.data.auth.GoogleSignInHelper
+import com.example.flourishtravelapp.data.auth.GoogleSignInResult
+import com.example.flourishtravelapp.data.model.ForgotPasswordRequest
+import com.example.flourishtravelapp.data.model.GoogleLoginRequest
+import android.widget.Toast
 
 @Composable
 fun LoginScreen(
@@ -45,9 +52,24 @@ fun LoginScreen(
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    // Forgot-password dialog state
+    var showForgotDialog by remember { mutableStateOf(false) }
+    var forgotEmail by remember { mutableStateOf("") }
+    var forgotLoading by remember { mutableStateOf(false) }
+    var forgotMessage by remember { mutableStateOf<String?>(null) }
+
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val coroutineScope = rememberCoroutineScope()
+
+    /** Shared success handler: saves session and routes by role. */
+    fun handleAuthSuccess(user: UserInfo) {
+        if (user.role.isTourGuideRole()) {
+            onGuideLoginSuccess(user)
+        } else {
+            onLoginSuccess(user)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -182,7 +204,7 @@ fun LoginScreen(
                         text = "Quên mật khẩu?",
                         modifier = Modifier
                             .align(Alignment.End)
-                            .clickable { },
+                            .clickable { showForgotDialog = true },
                         color = Color(0xFF005b41),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
@@ -214,11 +236,7 @@ fun LoginScreen(
                                                 authData.refreshToken,
                                                 authData.user
                                             )
-                                            if (authData.user.role.isTourGuideRole()) {
-                                                onGuideLoginSuccess(authData.user)
-                                            } else {
-                                                onLoginSuccess(authData.user)
-                                            }
+                                            handleAuthSuccess(authData.user)
                                         } else {
                                             errorMessage = "Không nhận được thông tin xác thực từ server!"
                                         }
@@ -365,16 +383,59 @@ fun LoginScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Circle 1: Google
-                        SocialLoginCircle {
+                        SocialLoginCircle(
+                            onClick = {
+                                coroutineScope.launch {
+                                    isLoading = true
+                                    errorMessage = null
+                                    try {
+                                        val serverClientId = context.getString(R.string.google_web_client_id)
+                                        when (val google = GoogleSignInHelper.signIn(context, serverClientId)) {
+                                            is GoogleSignInResult.Cancelled -> {
+                                                isLoading = false
+                                            }
+                                            is GoogleSignInResult.Failed -> {
+                                                isLoading = false
+                                                errorMessage = google.message
+                                            }
+                                            is GoogleSignInResult.Success -> {
+                                                val response = RetrofitClient.authApiService.googleLogin(
+                                                    GoogleLoginRequest(google.idToken)
+                                                )
+                                                isLoading = false
+                                                if (response.isSuccessful && response.body()?.success == true) {
+                                                    val authData = response.body()?.data
+                                                    if (authData != null) {
+                                                        sessionManager.saveSession(
+                                                            authData.accessToken,
+                                                            authData.refreshToken,
+                                                            authData.user
+                                                        )
+                                                        handleAuthSuccess(authData.user)
+                                                    } else {
+                                                        errorMessage = "Không nhận được thông tin xác thực từ server!"
+                                                    }
+                                                } else {
+                                                    errorMessage = response.body()?.message ?: "Đăng nhập Google thất bại!"
+                                                }
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        isLoading = false
+                                        errorMessage = "Lỗi đăng nhập Google: ${e.localizedMessage}"
+                                    }
+                                }
+                            }
+                        ) {
                             Image(
                                 painter = painterResource(id = R.drawable.ic_google),
                                 contentDescription = "Google Login",
                                 modifier = Modifier.size(28.dp)
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.width(20.dp))
-                        
+
                         // Circle 2: Facebook
                         SocialLoginCircle {
                             Image(
@@ -409,6 +470,85 @@ fun LoginScreen(
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // ── Forgot password dialog ──────────────────────────────────────────
+        if (showForgotDialog) {
+            AlertDialog(
+                onDismissRequest = { showForgotDialog = false },
+                title = { Text(text = "Quên mật khẩu") },
+                text = {
+                    Column {
+                        Text(
+                            text = "Nhập email của bạn, chúng tôi sẽ gửi link đặt lại mật khẩu.",
+                            color = Color(0xFF64748B),
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        LoginInputField(
+                            value = forgotEmail,
+                            onValueChange = {
+                                forgotEmail = it
+                                forgotMessage = null
+                            },
+                            placeholder = "Email",
+                            icon = Icons.Outlined.Email
+                        )
+                        if (forgotMessage != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = forgotMessage!!,
+                                color = Color(0xFF991B1B),
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = !forgotLoading && forgotEmail.isNotBlank(),
+                        onClick = {
+                            forgotLoading = true
+                            forgotMessage = null
+                            coroutineScope.launch {
+                                try {
+                                    val response = RetrofitClient.authApiService.forgotPassword(
+                                        ForgotPasswordRequest(forgotEmail.trim())
+                                    )
+                                    forgotLoading = false
+                                    forgotMessage = response.body()?.message
+                                        ?: "Nếu email tồn tại, bạn sẽ nhận link đặt lại mật khẩu"
+                                    if (response.isSuccessful) {
+                                        Toast.makeText(
+                                            context,
+                                            "Đã gửi link đặt lại mật khẩu tới email",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                        showForgotDialog = false
+                                    }
+                                } catch (e: Exception) {
+                                    forgotLoading = false
+                                    forgotMessage = "Lỗi: ${e.localizedMessage}"
+                                }
+                            }
+                        }
+                    ) {
+                        if (forgotLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Gửi")
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showForgotDialog = false }) {
+                        Text("Huỷ")
+                    }
+                }
+            )
         }
     }
 }
