@@ -20,10 +20,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.mapper.toGuideAccount
 import com.example.flourishtravelapp.data.mapper.toGuideTour
 import com.example.flourishtravelapp.ui.components.GuideBottomNavigation
 import com.example.flourishtravelapp.ui.theme.*
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
 
 /** Chỉ số tab bottom nav HDV (5 tab). */
 internal object GuideTabs {
@@ -153,7 +157,11 @@ fun GuideHomeScreen(
                     onNotifications = onNotifications,
                     onFloraSettings = onFloraSettings,
                     onSupport = onSupport,
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    onGuideUpdated = { next ->
+                        displayGuide = next.copy(totalTours = displayGuide.totalTours)
+                        onGuideUpdated(displayGuide)
+                    }
                 )
             }
         }
@@ -295,8 +303,31 @@ internal fun GuideProfileContent(
     onNotifications: () -> Unit = {},
     onFloraSettings: () -> Unit = {},
     onSupport: () -> Unit = {},
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onGuideUpdated: (GuideAccount) -> Unit = {}
 ) {
+    var display by remember(guide) { mutableStateOf(guide) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val response = RetrofitClient.userApiService.getProfile()
+            val profile = response.body()?.data
+            if (response.isSuccessful && response.body()?.success == true && profile != null) {
+                val next = profile.toGuideAccount(totalTours = display.totalTours)
+                display = next
+                onGuideUpdated(next)
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    val statusNote = when {
+        display.publicApproved && display.pendingReview -> "Đang hiện trên Đội ngũ HDV. Bản sửa chờ admin xem lại."
+        display.publicApproved -> "Đã duyệt — đang hiện trên Khám phá → Đội ngũ HDV."
+        display.pendingReview -> "Đã gửi admin, trang khách chưa hiện."
+        else -> "Chưa duyệt. Điền hồ sơ công khai rồi chờ admin."
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -317,16 +348,30 @@ internal fun GuideProfileContent(
                     shape = CircleShape,
                     color = Color.White.copy(alpha = 0.25f)
                 ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.padding(20.dp)
-                    )
+                    if (!display.avatarUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = display.avatarUrl,
+                            contentDescription = display.name,
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.padding(20.dp)
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(guide.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                Text(guide.handle, color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp)
+                Text(display.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text(display.jobTitle, color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp)
+                Text(display.handle, color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp)
+                if (display.verified) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text("Đã xác minh", color = Color(0xFFA7F3D0), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
                 Spacer(modifier = Modifier.height(12.dp))
                 Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.2f)) {
                     Row(
@@ -335,21 +380,57 @@ internal fun GuideProfileContent(
                     ) {
                         Icon(Icons.Default.Star, null, tint = Color(0xFFFFD54F), modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("${guide.rating} · ${guide.totalTours} tour", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text("${display.rating} · ${display.totalTours} tour", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
         }
 
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-            Spacer(modifier = Modifier.height(20.dp))
-            ProfileInfoRow(icon = Icons.Default.Phone, label = "Điện thoại", value = guide.phone)
+            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = if (display.publicApproved) Color(0xFFECFDF5) else Color(0xFFFFFBEB)
+            ) {
+                Text(
+                    statusNote,
+                    modifier = Modifier.padding(12.dp),
+                    color = if (display.publicApproved) Color(0xFF047857) else Color(0xFF92400E),
+                    fontSize = 13.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            ProfileInfoRow(icon = Icons.Default.Phone, label = "Điện thoại", value = display.phone.ifBlank { "Chưa cập nhật" })
             Spacer(modifier = Modifier.height(10.dp))
-            ProfileInfoRow(icon = Icons.Default.Explore, label = "Chuyên môn", value = guide.specialty)
+            ProfileInfoRow(icon = Icons.Default.Place, label = "Tuyến phụ trách", value = display.baseLocation.ifBlank { "Chưa cập nhật" })
             Spacer(modifier = Modifier.height(10.dp))
-            ProfileInfoRow(icon = Icons.Default.WorkHistory, label = "Tổng tour", value = "${guide.totalTours} tour đã dẫn")
+            ProfileInfoRow(
+                icon = Icons.Default.Translate,
+                label = "Ngôn ngữ",
+                value = display.languages.joinToString(", ").ifBlank { "Chưa cập nhật" }
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            ProfileInfoRow(
+                icon = Icons.Default.Explore,
+                label = "Chuyên môn",
+                value = display.specialties.joinToString(", ").ifBlank { "Chưa cập nhật" }
+            )
+            if (display.experienceYears != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                ProfileInfoRow(icon = Icons.Default.WorkHistory, label = "Kinh nghiệm", value = "${display.experienceYears} năm")
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            ProfileInfoRow(icon = Icons.Default.WorkHistory, label = "Tổng tour", value = "${display.totalTours} tour đã dẫn")
+            if (display.shortBio.isNotBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                ProfileInfoRow(icon = Icons.Default.Notes, label = "Bio ngắn", value = display.shortBio)
+            }
+            if (display.badges.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                ProfileInfoRow(icon = Icons.Default.MilitaryTech, label = "Huy hiệu", value = display.badges.joinToString(" · "))
+            }
             Spacer(modifier = Modifier.height(20.dp))
-            GuideProfileMenuRow(icon = Icons.Default.Edit, label = "Chỉnh sửa hồ sơ", onClick = onEditProfile)
+            GuideProfileMenuRow(icon = Icons.Default.Edit, label = "Chỉnh sửa hồ sơ công khai", onClick = onEditProfile)
             Spacer(modifier = Modifier.height(10.dp))
             GuideProfileMenuRow(icon = Icons.Default.Notifications, label = "Thông báo", onClick = onNotifications)
             Spacer(modifier = Modifier.height(10.dp))

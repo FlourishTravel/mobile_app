@@ -10,7 +10,22 @@ data class GuideAccount(
     val phone: String,
     val rating: Float,
     val totalTours: Int,
-    val specialty: String
+    val specialty: String,
+    val avatarUrl: String? = null,
+    val jobTitle: String = "Hướng dẫn viên",
+    val baseLocation: String = "",
+    val shortBio: String = "",
+    val fullBio: String = "",
+    val languages: List<String> = emptyList(),
+    val specialties: List<String> = emptyList(),
+    val experienceYears: Int? = null,
+    val coverUrl: String? = null,
+    val verified: Boolean = false,
+    val publicApproved: Boolean = false,
+    val pendingReview: Boolean = false,
+    val badges: List<String> = emptyList(),
+    val gender: String = "Nam",
+    val address: String = ""
 )
 
 data class GuideTourDay(

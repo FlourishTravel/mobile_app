@@ -9,6 +9,8 @@ import com.example.flourishtravelapp.data.model.GuideSessionDetailDto
 import com.example.flourishtravelapp.data.model.GuideSessionGuestsDto
 import com.example.flourishtravelapp.data.model.GuideSessionSummaryDto
 import com.example.flourishtravelapp.data.model.UserInfo
+import com.example.flourishtravelapp.data.model.UserProfileResponse
+import com.example.flourishtravelapp.data.model.genderBeToUi
 import com.example.flourishtravelapp.ui.screens.ActivityAttendance
 import com.example.flourishtravelapp.ui.screens.GuideAccount
 import com.example.flourishtravelapp.ui.screens.GuideTour
@@ -31,8 +33,38 @@ fun UserInfo.toGuideAccount(totalTours: Int = 0): GuideAccount = GuideAccount(
     phone = phone.orEmpty(),
     rating = 4.9f,
     totalTours = totalTours,
-    specialty = "Hướng dẫn viên Flourish"
+    specialty = "Hướng dẫn viên Flourish",
+    avatarUrl = avatarUrl
 )
+
+fun UserProfileResponse.toGuideAccount(totalTours: Int = 0): GuideAccount {
+    val specialties = guideSpecialties.orEmpty().filter { it.isNotBlank() }
+    return GuideAccount(
+        username = email,
+        password = "",
+        name = fullName,
+        handle = "@${email.substringBefore("@")}",
+        phone = phone.orEmpty(),
+        rating = 4.9f,
+        totalTours = totalTours,
+        specialty = specialties.joinToString(", ").ifBlank { jobTitle?.takeIf { it.isNotBlank() } ?: "Hướng dẫn viên" },
+        avatarUrl = avatarUrl,
+        jobTitle = jobTitle?.takeIf { it.isNotBlank() } ?: "Hướng dẫn viên",
+        baseLocation = guideBaseLocation.orEmpty(),
+        shortBio = guideShortBio.orEmpty(),
+        fullBio = guideBio.orEmpty(),
+        languages = guideLanguages.orEmpty().filter { it.isNotBlank() },
+        specialties = specialties,
+        experienceYears = guideExperienceYears,
+        coverUrl = guideCoverUrl,
+        verified = guideVerified == true,
+        publicApproved = guidePublicApproved == true,
+        pendingReview = guidePendingReview == true,
+        badges = guideBadges.orEmpty().filter { it.isNotBlank() },
+        gender = genderBeToUi(gender),
+        address = address.orEmpty()
+    )
+}
 
 fun GuideSessionSummaryDto.toGuideTour(): GuideTour = GuideTour(
     sessionId = sessionId,

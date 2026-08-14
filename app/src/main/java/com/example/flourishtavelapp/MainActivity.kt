@@ -33,7 +33,12 @@ class MainActivity : ComponentActivity() {
 enum class NavigationState {
     Login, Register, MainApp, TourDetail, BookingReview, PaymentInfo, BankTransfer, BookingSuccess,
     GuideHome, GuideTourDetail, GuideCustomerList, GuideProfile, Support,
-    Activities, ActivityDetail, FloraSettings, GroupChat, Notifications
+    Activities, ActivityDetail, FloraSettings, GroupChat, Notifications,
+    Destinations, DestinationDetail, Festivals, FestivalDetail, Reviews, Promotions, TravelTools,
+    GoidbCategories, GoidbCatalog, GoidbContent, GoidbGuides, GoidbTravelPrefs, GoidbHealth,
+    GoidbChatbotConfig, GoidbGuideMembers, GoidbTourBySlug, GoidbSimilarTours,
+    GoidbResetPassword, GoidbRefund, GoidbWaitlist, GoidbContact, GoidbNewsletter,
+    GoidbFloraLocation, GoidbDestinationMatch, GoidbFloraRecommend, GoidbAvailability
 }
 
 @Composable
@@ -45,7 +50,12 @@ fun AppNavigation() {
     var selectedCategoryForActivities by remember { mutableStateOf("") }
     var selectedActivitySlug by remember { mutableStateOf<String?>(null) }
     var selectedTourId by remember { mutableStateOf<String?>(null) }
+    var goidbSlug by remember { mutableStateOf("") }
+    var goidbId by remember { mutableStateOf("") }
+    var goidbSessionId by remember { mutableStateOf("") }
     var selectedSessionId by remember { mutableStateOf<String?>(null) }
+    var selectedDestinationSlug by remember { mutableStateOf<String?>(null) }
+    var selectedFestivalSlug by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
@@ -282,7 +292,171 @@ fun AppNavigation() {
                     }
                 }
             )
+            NavigationState.Destinations -> DestinationsScreen(
+                isLoggedIn = isLoggedIn,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onDestinationClick = { slug ->
+                    selectedDestinationSlug = slug
+                    navState = NavigationState.DestinationDetail
+                },
+                onFestivalsClick = { navState = NavigationState.Festivals },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.DestinationDetail -> {
+                val slug = selectedDestinationSlug
+                if (slug != null) {
+                    DestinationDetailScreen(
+                        slug = slug,
+                        onBack = { navState = NavigationState.Destinations },
+                        onTourClick = { tourSlug ->
+                            selectedTourId = tourSlug
+                            navState = NavigationState.TourDetail
+                        }
+                    )
+                } else {
+                    LaunchedEffect(Unit) { navState = NavigationState.Destinations }
+                }
+            }
+            NavigationState.Festivals -> FestivalsScreen(
+                isLoggedIn = isLoggedIn,
+                onBack = { navState = NavigationState.Destinations },
+                onFestivalClick = { fslug ->
+                    selectedFestivalSlug = fslug
+                    navState = NavigationState.FestivalDetail
+                },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.FestivalDetail -> {
+                val fslug = selectedFestivalSlug
+                if (fslug != null) {
+                    FestivalDetailScreen(
+                        festivalSlug = fslug,
+                        onBack = { navState = NavigationState.Festivals },
+                        onDestinationClick = { dslug ->
+                            selectedDestinationSlug = dslug
+                            navState = NavigationState.DestinationDetail
+                        }
+                    )
+                } else {
+                    LaunchedEffect(Unit) { navState = NavigationState.Festivals }
+                }
+            }
+            NavigationState.Reviews -> ReviewsScreen(
+                isLoggedIn = isLoggedIn,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.Promotions -> PromotionsScreen(
+                isLoggedIn = isLoggedIn,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.TravelTools -> TravelToolsScreen(
+                isLoggedIn = isLoggedIn,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
             NavigationState.ActivityDetail -> {
+                val slug = selectedActivitySlug
+                if (slug != null) {
+                    ActivityDetailScreen(
+                        slug = slug,
+                        onBack = { navState = NavigationState.Activities }
+                    )
+                } else {
+                    LaunchedEffect(Unit) { navState = NavigationState.Activities }
+                }
+            }
+            NavigationState.GoidbCategories -> CategoriesScreen(
+                isLoggedIn = isLoggedIn,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbCatalog -> CatalogScreen(
+                isLoggedIn = isLoggedIn,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbContent -> ContentScreen(
+                isLoggedIn = isLoggedIn,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbGuides -> GuidesScreen(
+                isLoggedIn = isLoggedIn,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbTravelPrefs -> TravelPreferencesScreen(
+                isLoggedIn = isLoggedIn,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbHealth -> HealthScreen(
+                isLoggedIn = isLoggedIn,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbChatbotConfig -> ChatbotConfigScreen(
+                isLoggedIn = isLoggedIn,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbGuideMembers -> GuideMembersScreen(
+                isLoggedIn = isLoggedIn,
+                navSessionId = goidbSessionId,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbTourBySlug -> TourDetailBySlugScreen(
+                isLoggedIn = isLoggedIn,
+                navSlug = goidbSlug,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbSimilarTours -> SimilarToursScreen(
+                isLoggedIn = isLoggedIn,
+                navId = goidbId,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbResetPassword -> ResetPasswordScreen(
+                navId = goidbId,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbRefund -> RefundRequestScreen(
+                navId = goidbId,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbWaitlist -> WaitlistScreen(
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 }
+            )
+            NavigationState.GoidbContact -> ContactScreen(
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 }
+            )
+            NavigationState.GoidbNewsletter -> NewsletterScreen(
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 }
+            )
+            NavigationState.GoidbFloraLocation -> FloraLocationScreen(
+                navId = goidbId,
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbDestinationMatch -> DestinationMatchScreen(
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 }
+            )
+            NavigationState.GoidbFloraRecommend -> FloraRecommendScreen(
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+            NavigationState.GoidbAvailability -> TourAvailabilityScreen(
+                onBack = { navState = NavigationState.MainApp; selectedTab = 0 },
+                onRequiresLogin = { navState = NavigationState.Login }
+            )
+
+            NavigationState.Activities -> {
                 val slug = selectedActivitySlug
                 if (slug != null) {
                     ActivityDetailScreen(
@@ -402,36 +576,18 @@ fun AppNavigation() {
             }
             NavigationState.GuideProfile -> {
                 if (isGuideLoggedIn) {
-                    ProfileScreen(
-                        userName = userName,
-                        userHandle = userHandle,
-                        userEmail = userEmail,
-                        userPhone = userPhone,
-                        userAddress = userAddress,
-                        notificationEnabled = notificationEnabled,
-                        onProfileUpdate = { name, handle, email, phone, address, notify ->
-                            userName = name
-                            userHandle = handle
-                            userEmail = email
-                            userPhone = phone
-                            userAddress = address
-                            notificationEnabled = notify
-                        },
+                    GuideEditProfileScreen(
                         modifier = Modifier.padding(innerPadding),
                         onBack = {
                             navState = NavigationState.GuideHome
                             guideHomeTab = 4
                         },
-                        onLogout = guideLogout,
-                        onFloraSettingsClick = {
-                            subScreenReturnState = NavigationState.GuideProfile
-                            subScreenReturnTab = 4
-                            navState = NavigationState.FloraSettings
-                        },
-                        onNotificationsClick = {
-                            subScreenReturnState = NavigationState.GuideProfile
-                            subScreenReturnTab = 4
-                            navState = NavigationState.Notifications
+                        onSaved = { account ->
+                            currentGuide = account.copy(totalTours = currentGuide?.totalTours ?: account.totalTours)
+                            userName = account.name
+                            userHandle = account.handle
+                            userPhone = account.phone
+                            userAddress = account.address
                         }
                     )
                 } else {
@@ -516,7 +672,26 @@ fun AppNavigation() {
                             } else {
                                 selectedTab = 1
                             }
-                        }
+                        },
+                        onOpenDestinations = { navState = NavigationState.Destinations },
+                        onOpenFestivals = { navState = NavigationState.Festivals },
+                        onOpenPromotions = { navState = NavigationState.Promotions },
+                        onOpenTravelTools = { navState = NavigationState.TravelTools },
+                        onOpenCategories = { navState = NavigationState.GoidbCategories },
+                        onOpenCatalog = { navState = NavigationState.GoidbCatalog },
+                        onOpenContent = { navState = NavigationState.GoidbContent },
+                        onOpenGuides = { navState = NavigationState.GoidbGuides },
+                        onOpenTravelPrefs = { navState = NavigationState.GoidbTravelPrefs },
+                        onOpenHealth = { navState = NavigationState.GoidbHealth },
+                        onOpenChatbotConfig = { navState = NavigationState.GoidbChatbotConfig },
+                        onOpenWaitlist = { navState = NavigationState.GoidbWaitlist },
+                        onOpenContact = { navState = NavigationState.GoidbContact },
+                        onOpenNewsletter = { navState = NavigationState.GoidbNewsletter },
+                        onOpenResetPassword = { navState = NavigationState.GoidbResetPassword },
+                        onOpenRefund = { navState = NavigationState.GoidbRefund },
+                        onOpenDestinationMatch = { navState = NavigationState.GoidbDestinationMatch },
+                        onOpenFloraRecommend = { navState = NavigationState.GoidbFloraRecommend },
+                        onOpenAvailability = { navState = NavigationState.GoidbAvailability }
                     )
                     1 -> {
                         if (isLoggedIn) {
