@@ -69,6 +69,7 @@ fun chatSenderLabel(message: ChatMessageViewDto, currentUserId: String?): String
     val role = message.senderRole.orEmpty().uppercase()
     val name = message.senderName?.trim().orEmpty()
     return when {
+        role == "FLORA" -> "Flora"
         role == "TOUR_GUIDE" -> if (name.isNotEmpty()) "$name (HDV)" else "Hướng dẫn viên"
         role == "ADMIN" -> name.ifEmpty { "Quản trị" }
         name.isNotEmpty() -> name
@@ -83,19 +84,22 @@ fun TourChatBubble(
     compact: Boolean = false
 ) {
     val isMine = !currentUserId.isNullOrBlank() && currentUserId == message.senderId
+    val isFlora = message.senderRole.equals("FLORA", ignoreCase = true)
     val isGuide = message.senderRole.equals("TOUR_GUIDE", ignoreCase = true)
         || message.senderRole.equals("ADMIN", ignoreCase = true)
     val bubbleColor = when {
         isMine -> PrimaryGreen
+        isFlora -> Color(0xFFECFDF5)
         isGuide -> Color(0xFFE8F5E9)
         else -> Color.White
     }
-    val textColor = if (isMine) Color.White else DarkTextColor
     val nameColor = when {
         isMine -> Color.White.copy(alpha = 0.9f)
+        isFlora -> PrimaryGreen
         isGuide -> PrimaryGreen
         else -> SecondaryTextColor
     }
+    val textColor = if (isMine) Color.White else DarkTextColor
     val avatarSize = if (compact) 28.dp else 36.dp
     val label = chatSenderLabel(message, currentUserId)
 

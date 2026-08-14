@@ -177,7 +177,7 @@ fun BookingGroupChatScreen(
                     value = messageInput,
                     onValueChange = { messageInput = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Nhập tin nhắn...") },
+                    placeholder = { Text("Nhắn đoàn hoặc @Flora...") },
                     shape = RoundedCornerShape(24.dp),
                     maxLines = 3
                 )
