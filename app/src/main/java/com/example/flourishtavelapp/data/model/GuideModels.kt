@@ -57,7 +57,10 @@ data class GuideSessionDetailDto(
 data class GuideCompanionLineDto(
     @SerializedName("fullName") val fullName: String?,
     @SerializedName("dateOfBirth") val dateOfBirth: String?,
-    @SerializedName("maskedIdNumber") val maskedIdNumber: String?
+    @SerializedName("maskedIdNumber") val maskedIdNumber: String?,
+    @SerializedName("maskedPassportNumber") val maskedPassportNumber: String?,
+    @SerializedName("passportExpiry") val passportExpiry: String?,
+    @SerializedName("nationality") val nationality: String?
 )
 
 data class GuideActivityAttendanceDto(

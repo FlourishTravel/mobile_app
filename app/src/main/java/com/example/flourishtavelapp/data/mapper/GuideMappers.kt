@@ -213,7 +213,9 @@ private fun GuideGuestBookingRowDto.toTourCustomer(): TourCustomer = TourCustome
     id = bookingId,
     name = travelerName.orEmpty(),
     phone = effectiveContactPhone?.takeIf { it.isNotBlank() } ?: phone.orEmpty(),
-    idCard = companions?.firstOrNull()?.maskedIdNumber.orEmpty(),
+    idCard = companions?.firstOrNull()?.let { c ->
+        c.maskedPassportNumber?.takeIf { it.isNotBlank() } ?: c.maskedIdNumber.orEmpty()
+    }.orEmpty(),
     gender = "",
     adultCount = guestCount.coerceAtLeast(1),
     childCount = 0,

@@ -194,7 +194,7 @@ private fun CustomerCard(customer: TourCustomer) {
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
                 CustomerInfoItem(Modifier.weight(1f), Icons.Outlined.Phone, "Điện thoại", customer.phone)
-                CustomerInfoItem(Modifier.weight(1f), Icons.Outlined.Badge, "CCCD/CMND", customer.idCard.ifBlank { "—" })
+                CustomerInfoItem(Modifier.weight(1f), Icons.Outlined.Badge, "Giấy tờ", customer.idCard.ifBlank { "—" })
             }
             if (customer.pickupAddress.isNotBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))

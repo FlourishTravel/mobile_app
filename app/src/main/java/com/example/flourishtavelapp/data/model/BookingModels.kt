@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.model
+package com.example.flourishtravelapp.data.model
 
 import com.google.gson.annotations.SerializedName
 
@@ -103,6 +103,9 @@ data class UserBookingGuestLineDto(
     @SerializedName("guestId") val guestId: String?,
     @SerializedName("fullName") val fullName: String?,
     @SerializedName("maskedIdNumber") val maskedIdNumber: String?,
+    @SerializedName("maskedPassportNumber") val maskedPassportNumber: String?,
+    @SerializedName("passportExpiry") val passportExpiry: String?,
+    @SerializedName("nationality") val nationality: String?,
     @SerializedName("dateOfBirth") val dateOfBirth: String?,
     @SerializedName("sortOrder") val sortOrder: Int?
 )
