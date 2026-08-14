@@ -12,6 +12,7 @@ data class TourChatContextDto(
     @SerializedName("sessionEndDate") val sessionEndDate: String?,
     @SerializedName("bookingStatus") val bookingStatus: String?,
     @SerializedName("guideName") val guideName: String?,
+    @SerializedName("guideAvatarUrl") val guideAvatarUrl: String?,
     @SerializedName("canChat") val canChat: Boolean = false,
     @SerializedName("denyReason") val denyReason: String?
 )
@@ -23,6 +24,7 @@ data class ChatMessageViewDto(
     @SerializedName("createdAt") val createdAt: String?,
     @SerializedName("senderId") val senderId: String?,
     @SerializedName("senderName") val senderName: String?,
+    @SerializedName("senderAvatarUrl") val senderAvatarUrl: String?,
     @SerializedName("senderRole") val senderRole: String?,
     @SerializedName("isPinned") val isPinned: Boolean? = false
 )

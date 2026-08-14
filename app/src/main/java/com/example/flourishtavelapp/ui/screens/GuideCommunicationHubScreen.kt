@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,11 +27,10 @@ import com.example.flourishtravelapp.data.model.ChatMessageViewDto
 import com.example.flourishtravelapp.data.model.GuideSessionSummaryDto
 import com.example.flourishtravelapp.data.model.SendChatMessageRequest
 import com.example.flourishtravelapp.data.model.TourChatContextDto
+import com.example.flourishtravelapp.data.session.SessionManager
+import com.example.flourishtravelapp.ui.components.TourChatBubble
 import com.example.flourishtravelapp.ui.theme.*
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +39,8 @@ fun GuideCommunicationHubScreen(
     onOpenFullScreenChat: (String) -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
+    val androidContext = LocalContext.current
+    val currentUserId = remember { SessionManager(androidContext).getUserInfo()?.id }
     var sessions by remember { mutableStateOf<List<GuideSessionSummaryDto>>(emptyList()) }
     var sessionId by remember { mutableStateOf("") }
     var bookings by remember { mutableStateOf<List<GuestBooking>>(emptyList()) }
@@ -225,7 +227,7 @@ fun GuideCommunicationHubScreen(
                                 }
                             }
                             items(messages, key = { it.id ?: it.hashCode() }) { msg ->
-                                HubChatBubble(msg)
+                                TourChatBubble(message = msg, currentUserId = currentUserId, compact = true)
                             }
                         }
                         if (canChat) {
@@ -280,42 +282,5 @@ fun GuideCommunicationHubScreen(
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-    }
-}
-
-@Composable
-private fun HubChatBubble(message: ChatMessageViewDto) {
-    val isGuide = message.senderRole?.equals("TOUR_GUIDE", ignoreCase = true) == true
-        || message.senderRole?.equals("ADMIN", ignoreCase = true) == true
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = if (isGuide) Alignment.Start else Alignment.End
-    ) {
-        Text(
-            message.senderName.orEmpty(),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (isGuide) PrimaryGreen else SecondaryTextColor
-        )
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = if (isGuide) Color(0xFFE8F5E9) else Color(0xFFF5F5F5)
-        ) {
-            Column(modifier = Modifier.padding(10.dp)) {
-                Text(message.content.orEmpty(), fontSize = 13.sp)
-                Text(formatHubChatTime(message.createdAt), fontSize = 9.sp, color = SecondaryTextColor)
-            }
-        }
-    }
-}
-
-private fun formatHubChatTime(iso: String?): String {
-    if (iso.isNullOrBlank()) return ""
-    return try {
-        DateTimeFormatter.ofPattern("HH:mm")
-            .withZone(ZoneId.systemDefault())
-            .format(Instant.parse(iso))
-    } catch (_: Exception) {
-        iso.take(16)
     }
 }
