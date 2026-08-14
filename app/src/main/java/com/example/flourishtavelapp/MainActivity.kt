@@ -91,7 +91,7 @@ fun AppNavigation() {
     var bookingIdCard by remember { mutableStateOf("012345678901") }
     var bookingGender by remember { mutableStateOf("Nam") }
     var bookingNote by remember { mutableStateOf("") }
-    var bookingPaymentMethod by remember { mutableStateOf("Bank Transfer") }
+    var bookingPaymentMethod by remember { mutableStateOf("PayOS") }
     var chatBookingId by remember { mutableStateOf("") }
     var chatReturnState by remember { mutableStateOf(NavigationState.MainApp) }
     var chatReturnTab by remember { mutableIntStateOf(1) }

@@ -1,8 +1,11 @@
-﻿package com.example.flourishtravelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.api.PaymentGateway
 import com.example.flourishtravelapp.data.model.BookingSummary
 import com.example.flourishtravelapp.data.model.Tour
 import com.example.flourishtravelapp.data.model.FavoriteRequest
@@ -635,6 +638,40 @@ fun TripsMainListScreen(
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 13.sp
                                         )
+                                    }
+
+                                    if (selectedTabIndex == 0 && tour.rawBookingStatus?.lowercase() == "pending") {
+                                        Button(
+                                            onClick = {
+                                                coroutineScope.launch {
+                                                    try {
+                                                        val url = PaymentGateway.resolveCheckoutUrl(
+                                                            tour.id,
+                                                            createdUrl = null,
+                                                            apiMethod = "payos"
+                                                        )
+                                                        if (!url.isNullOrBlank()) {
+                                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                                        } else {
+                                                            Toast.makeText(context, "Không mở được cổng thanh toán", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        Toast.makeText(context, e.localizedMessage ?: "Lỗi kết nối", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier
+                                                .height(44.dp),
+                                            shape = RoundedCornerShape(22.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+                                        ) {
+                                            Text(
+                                                text = "PayOS",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                color = Color.White
+                                            )
+                                        }
                                     }
 
                                     // Cancel Booking Button for booked tours

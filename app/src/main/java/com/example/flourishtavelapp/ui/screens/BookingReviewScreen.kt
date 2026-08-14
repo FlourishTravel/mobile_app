@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -48,7 +48,7 @@ fun BookingReviewScreen(
 
     var adultCount by remember { mutableIntStateOf(initialAdultCount) }
     var childCount by remember { mutableIntStateOf(initialChildCount) }
-    var selectedPaymentMethod by remember { mutableStateOf("Bank Transfer") }
+    var selectedPaymentMethod by remember { mutableStateOf("PayOS") }
 
     // Dynamic session and tour from server
     var sessionId by remember { mutableStateOf(initialSessionId ?: "d36e9617-bf7c-4a60-ab39-ec1f17bda5a5") } // Default fallback (Huế Tour Session)
@@ -327,9 +327,29 @@ fun BookingReviewScreen(
                 // Payment Method Section
                 Text("Payment Method", fontWeight = FontWeight.Bold, color = DarkTextColor)
                 Spacer(modifier = Modifier.height(12.dp))
-                PaymentMethodItem(title = "Bank Transfer", subtitle = "Chuyển khoản ngân hàng", icon = Icons.Default.AccountBalance, isSelected = selectedPaymentMethod == "Bank Transfer", onClick = { selectedPaymentMethod = "Bank Transfer" })
+                PaymentMethodItem(
+                    title = "PayOS",
+                    subtitle = "QR / chuyển khoản nhanh",
+                    icon = Icons.Default.QrCode2,
+                    isSelected = selectedPaymentMethod == "PayOS",
+                    onClick = { selectedPaymentMethod = "PayOS" }
+                )
                 Spacer(modifier = Modifier.height(12.dp))
-                PaymentMethodItem(title = "Online Payment", subtitle = "Momo, ZaloPay, etc.", icon = Icons.Default.AccountBalanceWallet, isSelected = selectedPaymentMethod == "Online Payment", onClick = { selectedPaymentMethod = "Online Payment" })
+                PaymentMethodItem(
+                    title = "MoMo",
+                    subtitle = "Ví điện tử MoMo",
+                    icon = Icons.Default.AccountBalanceWallet,
+                    isSelected = selectedPaymentMethod == "Online Payment",
+                    onClick = { selectedPaymentMethod = "Online Payment" }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                PaymentMethodItem(
+                    title = "Chuyển khoản",
+                    subtitle = "Chuyển khoản ngân hàng",
+                    icon = Icons.Default.AccountBalance,
+                    isSelected = selectedPaymentMethod == "Bank Transfer",
+                    onClick = { selectedPaymentMethod = "Bank Transfer" }
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 

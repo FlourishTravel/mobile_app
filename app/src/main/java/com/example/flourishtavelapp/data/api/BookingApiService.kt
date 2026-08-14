@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.api
+package com.example.flourishtravelapp.data.api
 
 import com.example.flourishtravelapp.data.model.*
 import retrofit2.Response
@@ -48,4 +48,7 @@ interface BookingApiService {
 
     @POST("bookings/{id}/momo-pay-url")
     suspend fun getMomoPaymentUrl(@Path("id") id: String): Response<ApiResponseMomoPayUrlResponse>
+
+    @POST("bookings/{id}/payos-pay-url")
+    suspend fun getPayOSPaymentUrl(@Path("id") id: String): Response<ApiResponseMomoPayUrlResponse>
 }

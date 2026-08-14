@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import android.content.Intent
 import android.net.Uri
@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flourishtravelapp.ui.theme.*
 import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.api.PaymentGateway
 import com.example.flourishtravelapp.data.model.CreateBookingRequest
 import com.example.flourishtravelapp.data.model.GuestItem
 import kotlinx.coroutines.launch
@@ -65,18 +66,17 @@ fun BankTransferScreen(
     var isProcessing by remember { mutableStateOf(false) }
     var apiError by remember { mutableStateOf<String?>(null) }
 
-    val isOnlinePayment = paymentMethod == "Online Payment"
+    val isPayOS = paymentMethod == PaymentGateway.UI_PAYOS
+    val isMomo = paymentMethod == PaymentGateway.UI_MOMO
+    val isOnlinePayment = isPayOS || isMomo
+    val apiPaymentMethod = PaymentGateway.toApiMethod(paymentMethod)
 
     suspend fun openPaymentUrl(bookingId: String, paymentUrl: String?) {
-        var url = paymentUrl
-        if (url.isNullOrBlank()) {
-            val momoResponse = RetrofitClient.bookingApiService.getMomoPaymentUrl(bookingId)
-            if (momoResponse.isSuccessful && momoResponse.body()?.success == true) {
-                url = momoResponse.body()?.data?.paymentUrl
-            }
-        }
+        val url = PaymentGateway.resolveCheckoutUrl(bookingId, paymentUrl, apiPaymentMethod)
         if (!url.isNullOrBlank()) {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } else {
+            apiError = "Không mở được cổng thanh toán. Kiểm tra PayOS trên máy chủ hoặc thử lại."
         }
     }
 
@@ -98,7 +98,7 @@ fun BankTransferScreen(
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    if (isOnlinePayment) "Thanh toán MoMo" else "Thanh toán",
+                    if (isPayOS) "Thanh toán PayOS" else if (isMomo) "Thanh toán MoMo" else "Thanh toán",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = DarkTextColor
@@ -154,10 +154,18 @@ fun BankTransferScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     if (isOnlinePayment) {
-                        Icon(Icons.Default.AccountBalanceWallet, null, tint = PrimaryGreen, modifier = Modifier.size(80.dp))
+                        Icon(
+                            if (isPayOS) Icons.Default.QrCode2 else Icons.Default.AccountBalanceWallet,
+                            null,
+                            tint = PrimaryGreen,
+                            modifier = Modifier.size(80.dp)
+                        )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            "Vui lòng hoàn tất thanh toán trong ứng dụng MoMo sau khi nhấn nút bên dưới.",
+                            if (isPayOS)
+                                "Nhấn nút bên dưới để mở PayOS. Quét QR hoặc chuyển khoản trên cổng thanh toán, rồi quay lại app."
+                            else
+                                "Vui lòng hoàn tất thanh toán trong ứng dụng MoMo sau khi nhấn nút bên dưới.",
                             color = SecondaryTextColor,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center,
@@ -313,7 +321,7 @@ fun BankTransferScreen(
                             guests = guestsList,
                             emergencyContactName = bookingName,
                             emergencyContactPhone = bookingPhone,
-                            paymentMethod = if (paymentMethod == "Online Payment") "ewallet" else "bank"
+                            paymentMethod = apiPaymentMethod
                         )
 
                         try {
@@ -349,7 +357,7 @@ fun BankTransferScreen(
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                 } else {
                     Text(
-                        if (isOnlinePayment) "Thanh toán qua MoMo" else "Tôi đã chuyển khoản",
+                        if (isPayOS) "Thanh toán qua PayOS" else if (isMomo) "Thanh toán qua MoMo" else "Tôi đã chuyển khoản",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
