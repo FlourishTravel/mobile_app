@@ -163,9 +163,9 @@ fun BankTransferScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             if (isPayOS)
-                                "Nhấn nút bên dưới để mở PayOS. Quét QR hoặc chuyển khoản trên cổng thanh toán, rồi quay lại app."
+                                "Nhấn nút bên dưới để mở PayOS. Quét QR hoặc chuyển khoản trên cổng thanh toán, rồi quay lại app.\n\n${PaymentGateway.holdHint("PayOS")}"
                             else
-                                "Vui lòng hoàn tất thanh toán trong ứng dụng MoMo sau khi nhấn nút bên dưới.",
+                                "Vui lòng hoàn tất thanh toán trong ứng dụng MoMo sau khi nhấn nút bên dưới.\n\n${PaymentGateway.holdHint("MoMo")}",
                             color = SecondaryTextColor,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center,

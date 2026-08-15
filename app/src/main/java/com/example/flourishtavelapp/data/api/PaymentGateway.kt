@@ -8,6 +8,11 @@ object PaymentGateway {
     const val UI_PAYOS = "PayOS"
     const val UI_MOMO = "Online Payment"
     const val UI_BANK = "Bank Transfer"
+    /** Khớp BE `app.booking.pending-expire-seconds` (mặc định 15 phút). */
+    const val HOLD_MINUTES = 15
+
+    fun holdHint(gatewayName: String = "PayOS / MoMo"): String =
+        "Nếu chưa thanh toán trong $HOLD_MINUTES phút (thoát $gatewayName), đơn tự hủy và trả chỗ."
 
     fun toApiMethod(uiLabel: String): String = when (uiLabel) {
         UI_PAYOS -> "payos"

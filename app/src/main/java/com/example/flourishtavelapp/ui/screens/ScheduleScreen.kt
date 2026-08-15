@@ -653,7 +653,11 @@ fun TripsMainListScreen(
                                                         if (!url.isNullOrBlank()) {
                                                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                                                         } else {
-                                                            Toast.makeText(context, "Không mở được cổng thanh toán", Toast.LENGTH_SHORT).show()
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Không mở được cổng. Đơn có thể đã hết hạn ${PaymentGateway.HOLD_MINUTES} phút — đặt lại tour.",
+                                                                Toast.LENGTH_LONG
+                                                            ).show()
                                                         }
                                                     } catch (e: Exception) {
                                                         Toast.makeText(context, e.localizedMessage ?: "Lỗi kết nối", Toast.LENGTH_SHORT).show()
@@ -674,8 +678,8 @@ fun TripsMainListScreen(
                                         }
                                     }
 
-                                    // Cancel Booking Button for booked tours
-                                    if (selectedTabIndex == 0 && tour.rawBookingStatus?.lowercase() != "cancelled") {
+                                    // Chỉ hủy đơn chờ thanh toán — khớp web / BE.
+                                    if (selectedTabIndex == 0 && tour.rawBookingStatus?.lowercase() == "pending") {
                                         Button(
                                             onClick = {
                                                 coroutineScope.launch {
@@ -707,6 +711,15 @@ fun TripsMainListScreen(
                                             )
                                         }
                                     }
+                                }
+                                if (selectedTabIndex == 0 && tour.rawBookingStatus?.lowercase() == "pending") {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = PaymentGateway.holdHint(),
+                                        color = Color(0xFF6B7280),
+                                        fontSize = 11.sp,
+                                        lineHeight = 14.sp
+                                    )
                                 }
                             }
                         }
