@@ -4,6 +4,7 @@ import com.example.flourishtravelapp.data.model.ApiResponseChatMessage
 import com.example.flourishtravelapp.data.model.ApiResponseChatMessageList
 import com.example.flourishtravelapp.data.model.ApiResponseTourChatContext
 import com.example.flourishtravelapp.data.model.SendChatMessageRequest
+import com.example.flourishtravelapp.data.model.ToggleChatReactionRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -27,5 +28,11 @@ interface ChatApiService {
     suspend fun sendBookingChatMessage(
         @Path("bookingId") bookingId: String,
         @Body body: SendChatMessageRequest
+    ): Response<ApiResponseChatMessage>
+
+    @POST("chat/messages/{messageId}/reactions")
+    suspend fun toggleChatReaction(
+        @Path("messageId") messageId: String,
+        @Body body: ToggleChatReactionRequest
     ): Response<ApiResponseChatMessage>
 }

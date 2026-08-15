@@ -26,9 +26,12 @@ import com.example.flourishtravelapp.data.mapper.toGuestSessionData
 import com.example.flourishtravelapp.data.model.ChatMessageViewDto
 import com.example.flourishtravelapp.data.model.GuideSessionSummaryDto
 import com.example.flourishtravelapp.data.model.SendChatMessageRequest
+import com.example.flourishtravelapp.data.model.ToggleChatReactionRequest
 import com.example.flourishtravelapp.data.model.TourChatContextDto
 import com.example.flourishtravelapp.data.session.SessionManager
+import com.example.flourishtravelapp.ui.components.ChatReactionPicker
 import com.example.flourishtravelapp.ui.components.TourChatBubble
+import com.example.flourishtravelapp.ui.components.TourChatComposer
 import com.example.flourishtravelapp.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -53,6 +56,8 @@ fun GuideCommunicationHubScreen(
     var chatError by remember { mutableStateOf<String?>(null) }
     var messageInput by remember { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
+    var replyTo by remember { mutableStateOf<ChatMessageViewDto?>(null) }
+    var actionMessage by remember { mutableStateOf<ChatMessageViewDto?>(null) }
     val listState = rememberLazyListState()
 
     fun loadChat() {
@@ -75,6 +80,29 @@ fun GuideCommunicationHubScreen(
                 chatError = e.localizedMessage ?: "Lỗi kết nối"
             } finally {
                 chatLoading = false
+            }
+        }
+    }
+
+    fun upsertMessage(dto: ChatMessageViewDto?) {
+        if (dto?.id == null) return
+        messages = messages.map { if (it.id == dto.id) dto else it }.let { list ->
+            if (list.any { it.id == dto.id }) list else list + dto
+        }
+    }
+
+    fun reactTo(message: ChatMessageViewDto, emoji: String) {
+        val id = message.id ?: return
+        scope.launch {
+            try {
+                val response = RetrofitClient.chatApiService.toggleChatReaction(
+                    id,
+                    ToggleChatReactionRequest(emoji)
+                )
+                if (response.isSuccessful && response.body()?.success == true) {
+                    upsertMessage(response.body()?.data)
+                }
+            } catch (_: Exception) {
             }
         }
     }
@@ -112,6 +140,9 @@ fun GuideCommunicationHubScreen(
     }
 
     LaunchedEffect(bookingId) {
+        replyTo = null
+        actionMessage = null
+        messageInput = ""
         if (bookingId.isNotBlank()) loadChat()
     }
 
@@ -227,59 +258,78 @@ fun GuideCommunicationHubScreen(
                                 }
                             }
                             items(messages, key = { it.id ?: it.hashCode() }) { msg ->
-                                TourChatBubble(message = msg, currentUserId = currentUserId, compact = true)
+                                TourChatBubble(
+                                    message = msg,
+                                    currentUserId = currentUserId,
+                                    compact = true,
+                                    onReply = { replyTo = it },
+                                    onReact = { message, emoji -> reactTo(message, emoji) },
+                                    onLongPress = { actionMessage = it }
+                                )
                             }
                         }
                         if (canChat) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                OutlinedTextField(
-                                    value = messageInput,
-                                    onValueChange = { messageInput = it },
-                                    modifier = Modifier.weight(1f),
-                                    placeholder = { Text("Nhắn đoàn hoặc @Flora...") },
-                                    shape = RoundedCornerShape(24.dp),
-                                    maxLines = 3
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                FilledIconButton(
-                                    onClick = {
-                                        val text = messageInput.trim()
-                                        if (text.isBlank() || sending) return@FilledIconButton
-                                        scope.launch {
-                                            sending = true
-                                            try {
-                                                val response = RetrofitClient.chatApiService.sendBookingChatMessage(
-                                                    bookingId,
-                                                    SendChatMessageRequest(text)
-                                                )
-                                                if (response.isSuccessful && response.body()?.success == true) {
-                                                    messageInput = ""
-                                                    loadChat()
-                                                }
-                                            } finally {
-                                                sending = false
+                            TourChatComposer(
+                                members = context?.members.orEmpty(),
+                                currentUserId = currentUserId,
+                                replyTo = replyTo,
+                                onClearReply = { replyTo = null },
+                                value = messageInput,
+                                onValueChange = { messageInput = it },
+                                sending = sending,
+                                enabled = true,
+                                onSend = {
+                                    val text = messageInput.trim()
+                                    if (text.isBlank() || sending) return@TourChatComposer
+                                    scope.launch {
+                                        sending = true
+                                        try {
+                                            val response = RetrofitClient.chatApiService.sendBookingChatMessage(
+                                                bookingId,
+                                                SendChatMessageRequest(text, replyTo?.id)
+                                            )
+                                            if (response.isSuccessful && response.body()?.success == true) {
+                                                messageInput = ""
+                                                replyTo = null
+                                                upsertMessage(response.body()?.data)
+                                                loadChat()
                                             }
+                                        } finally {
+                                            sending = false
                                         }
-                                    },
-                                    enabled = messageInput.isNotBlank() && !sending,
-                                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = PrimaryGreen)
-                                ) {
-                                    if (sending) {
-                                        CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                                    } else {
-                                        Icon(Icons.AutoMirrored.Filled.Send, null, tint = Color.White)
                                     }
                                 }
-                            }
+                            )
                         }
                     }
                 }
             }
+        }
+        if (actionMessage != null) {
+            AlertDialog(
+                onDismissRequest = { actionMessage = null },
+                title = { Text("Thả icon hoặc trả lời") },
+                text = {
+                    Column {
+                        ChatReactionPicker(
+                            onPick = { emoji ->
+                                actionMessage?.let { reactTo(it, emoji) }
+                                actionMessage = null
+                            }
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        TextButton(onClick = {
+                            replyTo = actionMessage
+                            actionMessage = null
+                        }) {
+                            Text("Trả lời tin nhắn này")
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { actionMessage = null }) { Text("Đóng") }
+                }
+            )
         }
         Spacer(modifier = Modifier.height(16.dp))
     }

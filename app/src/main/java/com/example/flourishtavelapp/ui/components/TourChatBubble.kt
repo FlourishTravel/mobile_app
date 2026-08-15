@@ -1,6 +1,10 @@
 package com.example.flourishtravelapp.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -38,6 +43,8 @@ import com.example.flourishtravelapp.ui.theme.SecondaryTextColor
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+
+val CHAT_REACTION_EMOJIS = listOf("👍", "❤️", "😂", "😮", "😢", "😡")
 
 @Composable
 fun ChatSenderAvatar(name: String?, avatarUrl: String?, size: androidx.compose.ui.unit.Dp = 36.dp) {
@@ -77,11 +84,15 @@ fun chatSenderLabel(message: ChatMessageViewDto, currentUserId: String?): String
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TourChatBubble(
     message: ChatMessageViewDto,
     currentUserId: String?,
-    compact: Boolean = false
+    compact: Boolean = false,
+    onReply: ((ChatMessageViewDto) -> Unit)? = null,
+    onReact: ((ChatMessageViewDto, String) -> Unit)? = null,
+    onLongPress: ((ChatMessageViewDto) -> Unit)? = null
 ) {
     val isMine = !currentUserId.isNullOrBlank() && currentUserId == message.senderId
     val isFlora = message.senderRole.equals("FLORA", ignoreCase = true)
@@ -102,6 +113,7 @@ fun TourChatBubble(
     val textColor = if (isMine) Color.White else DarkTextColor
     val avatarSize = if (compact) 28.dp else 36.dp
     val label = chatSenderLabel(message, currentUserId)
+    val reactions = message.reactions.orEmpty()
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -127,9 +139,38 @@ fun TourChatBubble(
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = bubbleColor,
-                border = if (isMine) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                border = if (isMine) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                modifier = Modifier.combinedClickable(
+                    onClick = { onReply?.let { /* tap keeps bubble selectable via long-press */ } },
+                    onLongClick = { onLongPress?.invoke(message) }
+                )
             ) {
                 Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                    val quote = message.replyTo
+                    if (quote != null) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isMine) Color.White.copy(alpha = 0.18f) else Color(0x14059669))
+                                .padding(horizontal = 8.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                quote.senderName ?: "Tin nhắn",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = textColor
+                            )
+                            Text(
+                                quote.content.orEmpty(),
+                                fontSize = 12.sp,
+                                color = textColor.copy(alpha = 0.85f),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Spacer(Modifier.height(6.dp))
+                    }
                     Text(message.content.orEmpty(), fontSize = if (compact) 13.sp else 14.sp, color = textColor)
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -139,10 +180,64 @@ fun TourChatBubble(
                     )
                 }
             }
+            if (reactions.isNotEmpty()) {
+                Spacer(Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    reactions.forEach { reaction ->
+                        val mineReact = reaction.reactedByMe
+                        Text(
+                            text = buildString {
+                                append(reaction.type.orEmpty())
+                                if (reaction.count > 1) {
+                                    append(" ")
+                                    append(reaction.count)
+                                }
+                            },
+                            fontSize = 12.sp,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (mineReact) Color(0xFFECFDF5) else Color.White)
+                                .border(
+                                    1.dp,
+                                    if (mineReact) PrimaryGreen else Color(0xFFE5E7EB),
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .clickable { reaction.type?.let { onReact?.invoke(message, it) } }
+                                .padding(horizontal = 7.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
         }
         if (isMine) {
             Spacer(Modifier.width(8.dp))
             ChatSenderAvatar(name = message.senderName, avatarUrl = message.senderAvatarUrl, size = avatarSize)
+        }
+    }
+}
+
+@Composable
+fun ChatReactionPicker(
+    onPick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White)
+            .border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(24.dp))
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        CHAT_REACTION_EMOJIS.forEach { emoji ->
+            Text(
+                text = emoji,
+                fontSize = 20.sp,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .clickable { onPick(emoji) }
+                    .padding(6.dp)
+            )
         }
     }
 }
