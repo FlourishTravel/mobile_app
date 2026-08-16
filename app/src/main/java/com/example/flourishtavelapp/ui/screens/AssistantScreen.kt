@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -94,7 +94,7 @@ fun AssistantScreen(
     val chatMessages = remember {
         mutableStateListOf(
             FloraChatMessage(
-                message = "Chào bạn, Flora đây! Mình sẽ đồng hành cùng bạn để chuyến đi thuận tiện, vui vẻ và phù hợp với sở thích của bạn hơn nhé.",
+                message = "Hi, mình là Flora. Hỏi lịch, mưa gió, chỗ ăn hay chính sách tour đều được nha.",
                 time = "Flora • VỪA XONG",
                 isUser = false
             )
