@@ -227,6 +227,83 @@ fun GuideGuestManagementScreen(
                             )
                         }
                     }
+                    selectedStopId?.let { stopId ->
+                        val allPeople = data.bookings.flatMap { it.participantAttendance }
+                        val missing = allPeople.count { attendanceAtActivity(it, stopId)?.checkInAt == null }
+                        val present = allPeople.count {
+                            val att = attendanceAtActivity(it, stopId)
+                            att?.checkInAt != null && att.checkOutAt == null
+                        }
+                        val inBusy = busyKey == "bulk-in-$stopId"
+                        val outBusy = busyKey == "bulk-out-$stopId"
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilledTonalButton(
+                                onClick = {
+                                    busyKey = "bulk-in-$stopId"
+                                    scope.launch {
+                                        try {
+                                            val res = RetrofitClient.guideApiService.activityCheckInAll(sessionId, stopId)
+                                            if (res.isSuccessful && res.body()?.success == true) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Đã điểm có mặt ${res.body()?.data?.updated ?: 0} người",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                reloadGuests()
+                                            } else {
+                                                error = res.body()?.message ?: "Điểm có mặt tất cả thất bại"
+                                            }
+                                        } catch (e: Exception) {
+                                            error = e.localizedMessage ?: "Lỗi kết nối"
+                                        } finally {
+                                            busyKey = null
+                                        }
+                                    }
+                                },
+                                enabled = !inBusy && !outBusy && missing > 0,
+                                modifier = Modifier.height(36.dp)
+                            ) {
+                                if (inBusy) {
+                                    CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Text("Có mặt tất cả", fontSize = 12.sp)
+                                }
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    busyKey = "bulk-out-$stopId"
+                                    scope.launch {
+                                        try {
+                                            val res = RetrofitClient.guideApiService.activityCheckOutAll(sessionId, stopId)
+                                            if (res.isSuccessful && res.body()?.success == true) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Đã rời điểm ${res.body()?.data?.updated ?: 0} người",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                reloadGuests()
+                                            } else {
+                                                error = res.body()?.message ?: "Rời điểm tất cả thất bại"
+                                            }
+                                        } catch (e: Exception) {
+                                            error = e.localizedMessage ?: "Lỗi kết nối"
+                                        } finally {
+                                            busyKey = null
+                                        }
+                                    }
+                                },
+                                enabled = !inBusy && !outBusy && present > 0,
+                                modifier = Modifier.height(36.dp)
+                            ) {
+                                if (outBusy) {
+                                    CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Text("Rời điểm tất cả", fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

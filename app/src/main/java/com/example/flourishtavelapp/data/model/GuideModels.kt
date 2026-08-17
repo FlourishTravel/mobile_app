@@ -158,6 +158,14 @@ data class ParticipantActivityAttendanceResultDto(
     @SerializedName("checkOutAt") val checkOutAt: String?
 )
 
+data class ActivityBulkAttendanceResultDto(
+    @SerializedName("activityId") val activityId: String?,
+    @SerializedName("updated") val updated: Int = 0,
+    @SerializedName("skippedAlready") val skippedAlready: Int = 0,
+    @SerializedName("totalParticipants") val totalParticipants: Int = 0,
+    @SerializedName("checkedInAtStopCount") val checkedInAtStopCount: Int = 0
+)
+
 data class SessionScheduleTemplateDto(
     @SerializedName("title") val title: String?,
     @SerializedName("startTime") val startTime: String?,
@@ -270,6 +278,12 @@ data class ApiResponseParticipantActivity(
     @SerializedName("success") val success: Boolean,
     @SerializedName("message") val message: String?,
     @SerializedName("data") val data: ParticipantActivityAttendanceResultDto?
+)
+
+data class ApiResponseActivityBulkAttendance(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: ActivityBulkAttendanceResultDto?
 )
 
 data class GuideSessionExpenseDto(

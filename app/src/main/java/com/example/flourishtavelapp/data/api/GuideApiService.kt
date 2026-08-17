@@ -1,5 +1,6 @@
 package com.example.flourishtravelapp.data.api
 
+import com.example.flourishtravelapp.data.model.ApiResponseActivityBulkAttendance
 import com.example.flourishtravelapp.data.model.ApiResponseGuideExpense
 import com.example.flourishtravelapp.data.model.ApiResponseGuideExpenseList
 import com.example.flourishtravelapp.data.model.ApiResponseGuideSessionDetail
@@ -68,6 +69,18 @@ interface GuideApiService {
         @Path("participantId") participantId: String,
         @Path("activityId") activityId: String
     ): Response<ApiResponseParticipantActivity>
+
+    @POST("guide/sessions/{sessionId}/activities/{activityId}/check-in-all")
+    suspend fun activityCheckInAll(
+        @Path("sessionId") sessionId: String,
+        @Path("activityId") activityId: String
+    ): Response<ApiResponseActivityBulkAttendance>
+
+    @POST("guide/sessions/{sessionId}/activities/{activityId}/check-out-all")
+    suspend fun activityCheckOutAll(
+        @Path("sessionId") sessionId: String,
+        @Path("activityId") activityId: String
+    ): Response<ApiResponseActivityBulkAttendance>
 
     @GET("guide/sessions/{sessionId}/schedule")
     suspend fun getSessionSchedule(
