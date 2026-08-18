@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.repository
+package com.example.flourishtravelapp.data.repository
 
 import com.example.flourishtravelapp.data.api.FloraApiService
 import com.example.flourishtravelapp.data.api.ReviewApiService
@@ -57,7 +57,9 @@ class FloraPostTourFeedbackRepository(
         bookingId: String,
         rating: Int,
         comment: String?,
-        feedbackTags: List<String>?
+        feedbackTags: List<String>?,
+        guideRating: Int? = null,
+        guideFeedbackTags: List<String>? = null
     ): FeedbackSubmitResult {
         return try {
             val response = reviewApiService.createReview(
@@ -65,7 +67,9 @@ class FloraPostTourFeedbackRepository(
                     bookingId = bookingId,
                     rating = rating,
                     comment = comment?.takeIf { it.isNotBlank() },
-                    feedbackTags = feedbackTags?.takeIf { it.isNotEmpty() }
+                    feedbackTags = feedbackTags?.takeIf { it.isNotEmpty() },
+                    guideRating = guideRating,
+                    guideFeedbackTags = guideFeedbackTags?.takeIf { it.isNotEmpty() }
                 )
             )
             when {

@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.components
+package com.example.flourishtravelapp.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -57,8 +57,10 @@ fun FloraPostTourFeedbackPanel(
     var ctx by remember { mutableStateOf<FloraPostTourFeedbackContextDto?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var rating by remember { mutableIntStateOf(5) }
+    var guideRating by remember { mutableIntStateOf(5) }
     var comment by remember { mutableStateOf("") }
     var selectedTags by remember { mutableStateOf(setOf<String>()) }
+    var selectedGuideTags by remember { mutableStateOf(setOf<String>()) }
     var preview by remember { mutableStateOf<FloraPreferencePreviewDto?>(null) }
     var previewLoading by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
@@ -119,6 +121,11 @@ fun FloraPostTourFeedbackPanel(
             context.existingFeedback.comment?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall)
             }
+            if (context.guideAssigned && context.existingFeedback.guideRating != null) {
+                Spacer(Modifier.height(8.dp))
+                Text("HDV ${context.guideName ?: ""}", style = MaterialTheme.typography.titleSmall)
+                StarRow(rating = context.existingFeedback.guideRating, onSelect = {}, enabled = false)
+            }
             return@Column
         }
 
@@ -155,6 +162,25 @@ fun FloraPostTourFeedbackPanel(
         )
         Spacer(Modifier.height(8.dp))
         StarRow(rating = rating, onSelect = { rating = it }, enabled = !submitting)
+        if (context.guideAssigned) {
+            Spacer(Modifier.height(12.dp))
+            Text("Đánh giá HDV ${context.guideName ?: "của đoàn"}", style = MaterialTheme.typography.titleSmall)
+            Text(
+                "Chấm HDV đã dẫn tour này — tách với điểm cả chuyến.",
+                style = MaterialTheme.typography.bodySmall
+            )
+            StarRow(rating = guideRating, onSelect = { guideRating = it }, enabled = !submitting)
+            TagSection(
+                tags = context.availableGuideTags.orEmpty(),
+                selected = selectedGuideTags,
+                onToggle = { id ->
+                    selectedGuideTags = if (selectedGuideTags.contains(id)) selectedGuideTags - id else selectedGuideTags + id
+                },
+                enabled = !submitting,
+                likedHint = "HDV này làm tốt điều gì?",
+                improveHint = "HDV có thể cải thiện gì?"
+            )
+        }
         OutlinedTextField(
             value = comment,
             onValueChange = { if (it.length <= 2000) comment = it },
@@ -199,7 +225,15 @@ fun FloraPostTourFeedbackPanel(
                     submitting = true
                     actionError = null
                     val tags = if (context.personalizationEnabled) selectedTags.toList() else null
-                    when (val result = repository.submitReview(bookingId, rating, comment, tags)) {
+                    val guideTags = if (context.guideAssigned) selectedGuideTags.toList() else null
+                    when (val result = repository.submitReview(
+                        bookingId,
+                        rating,
+                        comment,
+                        tags,
+                        if (context.guideAssigned) guideRating else null,
+                        guideTags
+                    )) {
                         FeedbackSubmitResult.Success -> {
                             reviewSubmitted = true
                             reload()
@@ -235,12 +269,14 @@ private fun TagSection(
     tags: List<FloraFeedbackTagDto>,
     selected: Set<String>,
     onToggle: (String) -> Unit,
-    enabled: Boolean
+    enabled: Boolean,
+    likedHint: String = "Bạn thích điều gì nhất trong chuyến đi này?",
+    improveHint: String = "Điều gì Flora có thể cải thiện cho lần sau?"
 ) {
     val liked = tags.filter { it.category == "LIKED" }
     val improve = tags.filter { it.category == "IMPROVE" }
     if (liked.isNotEmpty()) {
-        Text("Bạn thích điều gì nhất trong chuyến đi này?", style = MaterialTheme.typography.bodySmall)
+        Text(likedHint, style = MaterialTheme.typography.bodySmall)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             liked.forEach { tag ->
                 FilterChip(
@@ -253,7 +289,7 @@ private fun TagSection(
         }
     }
     if (improve.isNotEmpty()) {
-        Text("Điều gì Flora có thể cải thiện cho lần sau?", style = MaterialTheme.typography.bodySmall)
+        Text(improveHint, style = MaterialTheme.typography.bodySmall)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             improve.forEach { tag ->
                 FilterChip(

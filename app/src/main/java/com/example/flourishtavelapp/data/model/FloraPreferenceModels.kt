@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.model
+package com.example.flourishtravelapp.data.model
 
 import com.google.gson.annotations.SerializedName
 
@@ -53,7 +53,9 @@ data class FloraFeedbackTagDto(
 data class FloraExistingFeedbackDto(
     @SerializedName("rating") val rating: Int? = null,
     @SerializedName("comment") val comment: String? = null,
-    @SerializedName("feedbackTags") val feedbackTags: List<String>? = emptyList()
+    @SerializedName("feedbackTags") val feedbackTags: List<String>? = emptyList(),
+    @SerializedName("guideRating") val guideRating: Int? = null,
+    @SerializedName("guideFeedbackTags") val guideFeedbackTags: List<String>? = emptyList()
 )
 
 data class FloraPostTourFeedbackContextDto(
@@ -63,7 +65,11 @@ data class FloraPostTourFeedbackContextDto(
     @SerializedName("tourName") val tourName: String? = null,
     @SerializedName("completedAt") val completedAt: String? = null,
     @SerializedName("personalizationEnabled") val personalizationEnabled: Boolean = false,
+    @SerializedName("guideAssigned") val guideAssigned: Boolean = false,
+    @SerializedName("guideId") val guideId: String? = null,
+    @SerializedName("guideName") val guideName: String? = null,
     @SerializedName("availableTags") val availableTags: List<FloraFeedbackTagDto>? = emptyList(),
+    @SerializedName("availableGuideTags") val availableGuideTags: List<FloraFeedbackTagDto>? = emptyList(),
     @SerializedName("existingFeedback") val existingFeedback: FloraExistingFeedbackDto? = null
 )
 
@@ -99,7 +105,9 @@ data class CreateReviewRequest(
     @SerializedName("bookingId") val bookingId: String,
     @SerializedName("rating") val rating: Int,
     @SerializedName("comment") val comment: String? = null,
-    @SerializedName("feedbackTags") val feedbackTags: List<String>? = null
+    @SerializedName("feedbackTags") val feedbackTags: List<String>? = null,
+    @SerializedName("guideRating") val guideRating: Int? = null,
+    @SerializedName("guideFeedbackTags") val guideFeedbackTags: List<String>? = null
 )
 
 data class CreateReviewApiResponse(
