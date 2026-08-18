@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Flourish Tavel App"
+rootProject.name = "Flourish Tourism"
 include(":app")

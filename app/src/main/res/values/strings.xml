@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Flourish Travel</string>
+    <string name="app_name">Flourish Tourism</string>
     <!-- Web OAuth client ID (cùng ID với trang web). Android client chỉ dùng package + SHA-1 trên Cloud Console. -->
     <string name="google_web_client_id">856844669025-pj0cfpjb58sq9jviu9m01h6o7vsdqgpn.apps.googleusercontent.com</string>
 </resources>

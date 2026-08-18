@@ -493,7 +493,7 @@ fun TourDetailScreen(
                                     modifier = Modifier.padding(bottom = 12.dp)
                                 )
                                 Text(
-                                    detail.description ?: "Trải nghiệm trọn vẹn vẻ đẹp Thái Lan cùng FlourishTravel.",
+                                    detail.description ?: "Trải nghiệm trọn vẹn vẻ đẹp Thái Lan cùng Flourish Tourism.",
                                     color = SecondaryTextColor,
                                     fontSize = 14.sp,
                                     lineHeight = 20.sp

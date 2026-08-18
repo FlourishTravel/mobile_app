@@ -62,7 +62,7 @@ fun WelcomeScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Flourish Travel",
+                        text = "Flourish Tourism",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -238,7 +238,7 @@ fun LoginSection(onLoginSuccess: () -> Unit, onBuyTourClick: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
             ) {
                 Text(
-                    text = "Mở Flourish Travel",
+                    text = "Mở Flourish Tourism",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
