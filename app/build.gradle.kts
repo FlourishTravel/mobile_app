@@ -32,7 +32,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "vn.flourishtravel.app"
+        applicationId = "vn.flourishtourism.app"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
