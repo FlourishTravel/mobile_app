@@ -1236,7 +1236,8 @@ fun DetailedItineraryScreen(
                         1 -> {
                             // ── TAB 1: VÉ ĐIỆN TỬ (E-Ticket) ──
                             val detail = bookingDetail
-                            val orderIdDisplay = detail?.paymentOrderId?.takeIf { it.isNotBlank() }
+                            val orderIdDisplay = detail?.bookingCode?.takeIf { it.isNotBlank() }
+                                ?: detail?.paymentOrderId?.takeIf { it.isNotBlank() }
                                 ?: detail?.bookingId
                                 ?: "FL-${100000 + tour.id.hashCode() % 900000}"
                             val customerName = detail?.guestNames?.substringBefore(",")?.trim()?.takeIf { it.isNotBlank() }

@@ -24,6 +24,7 @@ data class GuestItem(
 
 data class CreateBookingResponse(
     @SerializedName("bookingId") val bookingId: String,
+    @SerializedName("bookingCode") val bookingCode: String? = null,
     @SerializedName("orderId") val orderId: String,
     @SerializedName("paymentUrl") val paymentUrl: String?,
     @SerializedName("expiresInSeconds") val expiresInSeconds: Int
@@ -72,6 +73,7 @@ data class ApiResponseValidatePromo(
 
 data class BookingSummary(
     @SerializedName("bookingId") val bookingId: String,
+    @SerializedName("bookingCode") val bookingCode: String? = null,
     @SerializedName("bookingStatus") val bookingStatus: String,
     @SerializedName("guestCount") val guestCount: Int? = null,
     @SerializedName("totalAmount") val totalAmount: Double? = null,
@@ -112,6 +114,7 @@ data class UserBookingGuestLineDto(
 
 data class UserBookingDetailDto(
     @SerializedName("bookingId") val bookingId: String?,
+    @SerializedName("bookingCode") val bookingCode: String? = null,
     @SerializedName("bookingStatus") val bookingStatus: String?,
     @SerializedName("guestCount") val guestCount: Int?,
     @SerializedName("totalAmount") val totalAmount: Double?,
