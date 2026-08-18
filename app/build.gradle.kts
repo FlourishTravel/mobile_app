@@ -20,11 +20,13 @@ if (envFile.exists()) {
 val apiUrl = env.getProperty("VITE_API_URL") ?: "https://flourishtravel.khanhtn45.id.vn/api"
 
 android {
+    // R / BuildConfig / Kotlin source stay on this package.
+    // Play Store identity is applicationId only — do not change it after the first upload.
     namespace = "com.example.flourishtravelapp"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.flourishtravelapp"
+        applicationId = "vn.flourishtravel.app"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
