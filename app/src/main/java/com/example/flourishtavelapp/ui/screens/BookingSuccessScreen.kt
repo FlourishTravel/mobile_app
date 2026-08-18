@@ -24,6 +24,7 @@ import coil.compose.AsyncImage
 import com.example.flourishtravelapp.data.api.RetrofitClient
 import com.example.flourishtravelapp.data.model.UserBookingDetailDto
 import com.example.flourishtravelapp.data.util.resolveMediaUrl
+import com.example.flourishtravelapp.ui.components.BookingQrImage
 import com.example.flourishtravelapp.ui.theme.*
 
 @Composable
@@ -216,7 +217,11 @@ fun BookingSuccessScreen(
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.QrCode2, null, tint = DarkTextColor, modifier = Modifier.fillMaxSize())
+                            BookingQrImage(
+                                bookingCode = detail?.bookingCode,
+                                bookingId = detail?.bookingId ?: bookingId,
+                                sizeDp = 148
+                            )
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Mã đặt chỗ", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = DarkTextColor)

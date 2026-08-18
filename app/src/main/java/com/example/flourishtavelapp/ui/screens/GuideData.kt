@@ -125,6 +125,7 @@ data class GuestSessionData(
 
 data class GuestBooking(
     val bookingId: String,
+    val bookingCode: String = "",
     val travelerUserId: String?,
     val travelerName: String,
     val phone: String,

@@ -147,6 +147,7 @@ private fun GuideItineraryStopDto.toItineraryStop(): ItineraryStop = ItinerarySt
 
 private fun GuideGuestBookingRowDto.toGuestBooking(): GuestBooking = GuestBooking(
     bookingId = bookingId,
+    bookingCode = bookingCode.orEmpty(),
     travelerUserId = travelerUserId,
     travelerName = travelerName.orEmpty(),
     phone = effectiveContactPhone?.takeIf { it.isNotBlank() } ?: phone.orEmpty(),

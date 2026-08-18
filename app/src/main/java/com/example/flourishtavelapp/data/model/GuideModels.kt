@@ -96,6 +96,7 @@ data class GuideItineraryStopDto(
 
 data class GuideGuestBookingRowDto(
     @SerializedName("bookingId") val bookingId: String,
+    @SerializedName("bookingCode") val bookingCode: String? = null,
     @SerializedName("travelerUserId") val travelerUserId: String?,
     @SerializedName("travelerName") val travelerName: String?,
     @SerializedName("email") val email: String?,

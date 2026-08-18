@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
+import com.example.flourishtravelapp.ui.components.BookingQrImage
 import com.example.flourishtravelapp.ui.components.FloraJourneyPanel
 import com.example.flourishtravelapp.ui.components.FloraPostTourFeedbackPanel
 import com.example.flourishtravelapp.ui.components.rememberFloraJourneyState
@@ -1318,21 +1319,11 @@ fun DetailedItineraryScreen(
                                             .padding(vertical = 10.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
-                                        Surface(
-                                            modifier = Modifier.size(160.dp),
-                                            shape = RoundedCornerShape(16.dp),
-                                            color = Color(0xFFF5F5F5),
-                                            border = BorderStroke(1.dp, Color(0xFFE0E0E0))
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Icon(
-                                                    imageVector = Icons.Default.QrCode,
-                                                    contentDescription = "QR Code Scanner Icon",
-                                                    tint = DarkTextColor,
-                                                    modifier = Modifier.size(90.dp)
-                                                )
-                                            }
-                                        }
+                                        BookingQrImage(
+                                            bookingCode = detail?.bookingCode,
+                                            bookingId = detail?.bookingId,
+                                            sizeDp = 160
+                                        )
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
                                             text = "Đưa mã này cho HDV tại điểm xuất phát",

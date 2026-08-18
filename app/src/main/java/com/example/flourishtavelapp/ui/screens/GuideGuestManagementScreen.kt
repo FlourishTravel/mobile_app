@@ -1,6 +1,9 @@
 package com.example.flourishtravelapp.ui.screens
 
+import android.Manifest
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,7 +31,10 @@ import com.example.flourishtravelapp.data.mapper.formatDt
 import com.example.flourishtravelapp.data.mapper.toGuestSessionData
 import com.example.flourishtravelapp.data.model.GuideCheckinRequest
 import com.example.flourishtravelapp.data.model.GuideSessionSummaryDto
+import com.example.flourishtravelapp.data.util.BookingCodes
 import com.example.flourishtravelapp.ui.theme.*
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,8 +116,59 @@ fun GuideGuestManagementScreen(
         val q = searchQuery.trim().lowercase()
         if (q.isBlank()) rows
         else rows.filter { b ->
-            listOf(b.travelerName, b.phone, b.email, b.pickupAddress, b.specialRequests)
+            listOf(b.travelerName, b.phone, b.email, b.pickupAddress, b.specialRequests, b.bookingCode, b.bookingId)
                 .joinToString(" ").lowercase().contains(q)
+        }
+    }
+
+    fun applyScanned(raw: String) {
+        val parsed = BookingCodes.parseQr(raw)
+            ?: BookingCodes.qrPayload(null, raw).takeIf { it.isNotBlank() }
+        if (parsed.isNullOrBlank()) {
+            Toast.makeText(context, "Không đọc được mã đặt chỗ", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val booking = guestData?.bookings.orEmpty().find { row ->
+            BookingCodes.qrPayload(row.bookingCode, row.bookingId).equals(parsed, ignoreCase = true)
+                || row.bookingId.equals(raw.trim(), ignoreCase = true)
+        }
+        if (booking == null) {
+            Toast.makeText(context, "Không thấy $parsed trên chuyến này", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (booking.checkedInGathering) {
+            Toast.makeText(context, "${booking.travelerName} đã điểm danh", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val uid = booking.travelerUserId
+        if (uid.isNullOrBlank()) {
+            Toast.makeText(context, "Đơn chưa gắn tài khoản", Toast.LENGTH_SHORT).show()
+            return
+        }
+        scope.launch {
+            try {
+                RetrofitClient.guideApiService.checkin(GuideCheckinRequest(sessionId, uid, "gathering"))
+                Toast.makeText(context, "Đã điểm danh ${booking.travelerName}", Toast.LENGTH_SHORT).show()
+                reloadGuests()
+            } catch (e: Exception) {
+                Toast.makeText(context, e.localizedMessage ?: "Điểm danh thất bại", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
+        result.contents?.let { applyScanned(it) }
+    }
+    val cameraPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            scanLauncher.launch(
+                ScanOptions()
+                    .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                    .setPrompt("Quét mã FT- trên vé khách")
+                    .setBeepEnabled(false)
+            )
+        } else {
+            Toast.makeText(context, "Cần quyền camera để quét QR", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -138,9 +195,7 @@ fun GuideGuestManagementScreen(
                     modifier = Modifier.weight(1f)
                 )
                 FilledTonalButton(
-                    onClick = {
-                        Toast.makeText(context, "Quét QR điểm danh — đang phát triển", Toast.LENGTH_SHORT).show()
-                    },
+                    onClick = { cameraPermission.launch(Manifest.permission.CAMERA) },
                     modifier = Modifier.padding(start = 8.dp)
                 ) {
                     Icon(Icons.Default.QrCodeScanner, null, modifier = Modifier.size(18.dp))
@@ -372,6 +427,9 @@ private fun GuestBookingCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(booking.travelerName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        if (booking.bookingCode.isNotBlank()) {
+                            Text(booking.bookingCode, fontSize = 12.sp, color = PrimaryGreen, fontWeight = FontWeight.SemiBold)
+                        }
                         Text(booking.phone, fontSize = 12.sp, color = SecondaryTextColor)
                         if (booking.guestCount > 1) {
                             Text("${booking.guestCount} khách", fontSize = 11.sp, color = SecondaryTextColor)
