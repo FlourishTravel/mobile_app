@@ -16,7 +16,8 @@
         android:roundIcon="@mipmap/ic_launcher_new"
         android:supportsRtl="true"
         android:theme="@style/Theme.FlourishTavelApp"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="${usesCleartextTraffic}"
+        tools:replace="android:usesCleartextTraffic">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -17,7 +17,13 @@ if (envFile.exists()) {
         env.load(it)
     }
 }
-val apiUrl = env.getProperty("VITE_API_URL") ?: "https://flourishtravel.khanhtn45.id.vn/api"
+val apiUrl = env.getProperty("VITE_API_URL") ?: "https://flourishtravelapp.khanhtn45.id.vn/api"
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+}
 
 android {
     // R / BuildConfig / Kotlin source stay on this package.
@@ -37,13 +43,31 @@ android {
         buildConfigField("String", "BASE_URL", "\"$apiUrl/\"")
     }
 
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {
