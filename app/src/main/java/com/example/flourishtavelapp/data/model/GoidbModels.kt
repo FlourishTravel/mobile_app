@@ -200,20 +200,6 @@ data class Booking(
     @SerializedName("discountAmount") val discountAmount: Double? = null
 )
 
-data class SiteContentDto(
-    @SerializedName("id") val id: String? = null,
-    @SerializedName("type") val type: String? = null,
-    @SerializedName("slug") val slug: String? = null,
-    @SerializedName("title") val title: String? = null,
-    @SerializedName("summary") val summary: String? = null,
-    @SerializedName("body") val body: String? = null,
-    @SerializedName("imageUrl") val imageUrl: String? = null,
-    @SerializedName("category") val category: String? = null,
-    @SerializedName("published") val published: Boolean? = null,
-    @SerializedName("sortOrder") val sortOrder: Int? = null,
-    @SerializedName("publishedAt") val publishedAt: String? = null
-)
-
 data class TourRequest(
     @SerializedName("title") val title: String? = null,
     @SerializedName("slug") val slug: String? = null,

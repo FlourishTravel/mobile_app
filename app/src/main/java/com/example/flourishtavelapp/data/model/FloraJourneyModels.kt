@@ -62,17 +62,6 @@ data class FloraScheduleItemDto(
     @SerializedName("summary") val summary: String?
 )
 
-data class FloraLocationRequest(
-    @SerializedName("latitude") val latitude: Double,
-    @SerializedName("longitude") val longitude: Double,
-    @SerializedName("accuracyMeters") val accuracyMeters: Double? = null
-)
-
-data class FloraLocationResponse(
-    @SerializedName("accepted") val accepted: Boolean,
-    @SerializedName("message") val message: String?
-)
-
 data class FloraLocationApiResponse(
     @SerializedName("success") val success: Boolean,
     @SerializedName("message") val message: String?,
