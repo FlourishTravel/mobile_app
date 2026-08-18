@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.model
+package com.example.flourishtravelapp.data.model
 
 import com.google.gson.annotations.SerializedName
 
@@ -6,7 +6,9 @@ data class ChatbotRequest(
     @SerializedName("content") val content: String,
     @SerializedName("sessionId") val sessionId: String? = null,
     @SerializedName("userId") val userId: String? = null,
-    @SerializedName("state") val state: Map<String, Any>? = null
+    @SerializedName("state") val state: Map<String, Any>? = null,
+    @SerializedName("latitude") val latitude: Double? = null,
+    @SerializedName("longitude") val longitude: Double? = null
 )
 
 data class QuickReply(

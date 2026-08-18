@@ -59,6 +59,9 @@ import com.example.flourishtravelapp.data.api.RetrofitClient
 import com.example.flourishtravelapp.data.model.ChatbotRequest
 import com.example.flourishtravelapp.data.model.ChatbotTourCard
 import com.example.flourishtravelapp.data.session.SessionManager
+import com.example.flourishtravelapp.location.FusedForegroundLocationProvider
+import com.example.flourishtravelapp.location.LocationPermissionHelper
+import com.example.flourishtravelapp.location.MobileLocationResult
 import com.example.flourishtravelapp.ui.theme.DarkTextColor
 import com.example.flourishtravelapp.ui.theme.LightGreenBackground
 import com.example.flourishtravelapp.ui.theme.NatureGreenBackground
@@ -105,6 +108,17 @@ fun AssistantScreen(
     var lastState by remember { mutableStateOf<Map<String, Any>?>(null) }
     var quickReplies by remember { mutableStateOf<List<String>>(emptyList()) }
     val scrollState = rememberScrollState()
+    var cachedLat by remember { mutableStateOf<Double?>(null) }
+    var cachedLon by remember { mutableStateOf<Double?>(null) }
+
+    LaunchedEffect(Unit) {
+        if (!LocationPermissionHelper.hasForegroundLocationPermission(context)) return@LaunchedEffect
+        val loc = FusedForegroundLocationProvider(context).getForegroundLocation(3_000L)
+        if (loc is MobileLocationResult.Success) {
+            cachedLat = loc.latitude
+            cachedLon = loc.longitude
+        }
+    }
 
     fun sendChat(text: String) {
         if (text.isBlank() || loading) return
@@ -119,7 +133,9 @@ fun AssistantScreen(
                     content = text,
                     sessionId = sessionId,
                     userId = user?.id,
-                    state = lastState
+                    state = lastState,
+                    latitude = cachedLat,
+                    longitude = cachedLon
                 )
                 val response = withContext(Dispatchers.IO) {
                     RetrofitClient.chatbotApiService.sendMessage(request)
