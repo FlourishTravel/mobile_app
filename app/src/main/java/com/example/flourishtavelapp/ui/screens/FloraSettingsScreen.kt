@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult

@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.preferences
+package com.example.flourishtravelapp.data.preferences
 
 import com.example.flourishtravelapp.data.model.TravelPreferencesDto
 import com.example.flourishtravelapp.data.model.UpdateTravelPreferencesRequest

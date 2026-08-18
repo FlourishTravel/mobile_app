@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.session
+package com.example.flourishtravelapp.data.session
 
 import android.content.Context
 import android.content.SharedPreferences

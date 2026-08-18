@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.api
+package com.example.flourishtravelapp.data.api
 
 import com.example.flourishtravelapp.BuildConfig
 import com.example.flourishtravelapp.data.session.SessionManager
@@ -154,6 +154,24 @@ object RetrofitClient {
             .create(CatalogApiService::class.java)
     }
 
+    val destinationApiService: DestinationApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(DestinationApiService::class.java)
+    }
+
+    val promotionApiService: PromotionApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(PromotionApiService::class.java)
+    }
+
     val chatApiService: ChatApiService by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
@@ -170,5 +188,22 @@ object RetrofitClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(NotificationApiService::class.java)
+    }
+    val contentApiService: ContentApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ContentApiService::class.java)
+    }
+
+    val goidbApiService: GoidbApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(GoidbApiService::class.java)
     }
 }

@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.push
+package com.example.flourishtravelapp.push
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.api
+package com.example.flourishtravelapp.data.api
 
 import com.example.flourishtravelapp.data.model.ApiEnvelope
 import com.example.flourishtravelapp.data.model.PushDeviceRegisterRequest

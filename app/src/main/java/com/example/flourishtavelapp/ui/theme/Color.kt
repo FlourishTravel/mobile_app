@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.theme
+package com.example.flourishtravelapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

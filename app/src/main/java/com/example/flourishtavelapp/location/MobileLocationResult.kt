@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.location
+package com.example.flourishtravelapp.location
 
 sealed class MobileLocationResult {
     data class Success(val latitude: Double, val longitude: Double) : MobileLocationResult()

@@ -47,7 +47,26 @@ fun HomepageScreen(
     onAssistantClick: () -> Unit,
     onProfileClick: () -> Unit,
     onCategoryClick: (String) -> Unit,
-    onMyToursClick: () -> Unit
+    onMyToursClick: () -> Unit,
+    onOpenDestinations: () -> Unit = {},
+    onOpenFestivals: () -> Unit = {},
+    onOpenPromotions: () -> Unit = {},
+    onOpenTravelTools: () -> Unit = {},
+    onOpenCategories: () -> Unit = {},
+    onOpenCatalog: () -> Unit = {},
+    onOpenContent: () -> Unit = {},
+    onOpenGuides: () -> Unit = {},
+    onOpenTravelPrefs: () -> Unit = {},
+    onOpenHealth: () -> Unit = {},
+    onOpenChatbotConfig: () -> Unit = {},
+    onOpenWaitlist: () -> Unit = {},
+    onOpenContact: () -> Unit = {},
+    onOpenNewsletter: () -> Unit = {},
+    onOpenResetPassword: () -> Unit = {},
+    onOpenRefund: () -> Unit = {},
+    onOpenDestinationMatch: () -> Unit = {},
+    onOpenFloraRecommend: () -> Unit = {},
+    onOpenAvailability: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var categoriesList by remember { mutableStateOf<List<Category>>(emptyList()) }
@@ -132,6 +151,63 @@ fun HomepageScreen(
             }
 
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                // ── New: Gói A quick links (Điểm đến / Lễ hội / Ưu đãi / Công cụ) ──
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                ) {
+                    item {
+                        AssistChip(
+                            onClick = onOpenDestinations,
+                            label = { Text("🌏 Điểm đến") },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFECFDF5), labelColor = Color(0xFF005b41))
+                        )
+                    }
+                    item {
+                        AssistChip(
+                            onClick = onOpenFestivals,
+                            label = { Text("🎉 Lễ hội") },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFF5F3FF), labelColor = Color(0xFF8B5CF6))
+                        )
+                    }
+                    item {
+                        AssistChip(
+                            onClick = onOpenPromotions,
+                            label = { Text("🏷 Ưu đãi") },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFFEF3C7), labelColor = Color(0xFFB45309))
+                        )
+                    }
+                    item {
+                        AssistChip(
+                            onClick = onOpenTravelTools,
+                            label = { Text("🛠 Công cụ") },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFE0F2FE), labelColor = Color(0xFF0284C7))
+                        )
+                    }
+                }
+
+                // ── Gói B quick links ──
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                ) {
+                    item { AssistChip(onClick = onOpenCategories, label = { Text("📂 Danh mục") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFFEF3C7), labelColor = Color(0xFFB45309))) }
+                    item { AssistChip(onClick = onOpenCatalog, label = { Text("🗂 Catalog") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFECFDF5), labelColor = Color(0xFF005b41))) }
+                    item { AssistChip(onClick = onOpenContent, label = { Text("📄 Nội dung") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFF5F3FF), labelColor = Color(0xFF8B5CF6))) }
+                    item { AssistChip(onClick = onOpenGuides, label = { Text("🧭 Guide") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFE0F2FE), labelColor = Color(0xFF0284C7))) }
+                    item { AssistChip(onClick = onOpenTravelPrefs, label = { Text("⚙ Sở thích") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFFEF3C7), labelColor = Color(0xFFB45309))) }
+                    item { AssistChip(onClick = onOpenChatbotConfig, label = { Text("🤖 Chatbot") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFECFDF5), labelColor = Color(0xFF005b41))) }
+                    item { AssistChip(onClick = onOpenHealth, label = { Text("💚 Health") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFE0F2FE), labelColor = Color(0xFF0284C7))) }
+                    item { AssistChip(onClick = onOpenDestinationMatch, label = { Text("🔮 Gợi ý điểm đến") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFF5F3FF), labelColor = Color(0xFF8B5CF6))) }
+                    item { AssistChip(onClick = onOpenFloraRecommend, label = { Text("✨ Flora gợi ý") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFECFDF5), labelColor = Color(0xFF005b41))) }
+                    item { AssistChip(onClick = onOpenAvailability, label = { Text("📅 Lịch trống") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFFEF3C7), labelColor = Color(0xFFB45309))) }
+                    item { AssistChip(onClick = onOpenResetPassword, label = { Text("🔑 Reset MK") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFE0F2FE), labelColor = Color(0xFF0284C7))) }
+                    item { AssistChip(onClick = onOpenRefund, label = { Text("💸 Hoàn tiền") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFF5F3FF), labelColor = Color(0xFF8B5CF6))) }
+                    item { AssistChip(onClick = onOpenWaitlist, label = { Text("⏳ Chờ") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFECFDF5), labelColor = Color(0xFF005b41))) }
+                    item { AssistChip(onClick = onOpenContact, label = { Text("✉ Liên hệ") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFFEF3C7), labelColor = Color(0xFFB45309))) }
+                    item { AssistChip(onClick = onOpenNewsletter, label = { Text("📰 Bản tin") }, colors = AssistChipDefaults.assistChipColors(containerColor = Color(0xFFE0F2FE), labelColor = Color(0xFF0284C7))) }
+                }
+
                 // ── Quick Action Icons ──
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -180,31 +256,12 @@ fun HomepageScreen(
                     contentPadding = PaddingValues(horizontal = 20.dp)
                 ) {
                     if (toursList.isEmpty()) {
-                        // Fallback to mock data if empty
                         item {
-                            FeaturedTourCard(
-                                title = "Kỳ quan Bangkok",
-                                subtitle = "Grand Palace & Wat Arun",
-                                price = "2.490.000đ",
-                                rating = "4.9",
-                                badge = "Bán chạy nhất",
-                                badgeColor = PrimaryGreen,
-                                imageUrl = null,
-                                fallbackImageRes = R.drawable.bangkook_bg,
-                                onClick = { onTourClick("234c6269-9382-42e4-ab11-ca518e4ddb4b") }
-                            )
-                        }
-                        item {
-                            FeaturedTourCard(
-                                title = "Đảo Phi Phi",
-                                subtitle = "Lặn biển & hoàng hôn",
-                                price = "3.150.000đ",
-                                rating = "4.8",
-                                badge = "Tour biển",
-                                badgeColor = Color(0xFF2196F3),
-                                imageUrl = null,
-                                fallbackImageRes = R.drawable.phiphi_bg,
-                                onClick = { onTourClick("234c6269-9382-42e4-ab11-ca518e4ddb4b") } // fall back tour ID
+                            Text(
+                                "Chưa có chuyến đi nổi bật.",
+                                color = SecondaryTextColor,
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(vertical = 24.dp)
                             )
                         }
                     } else {
@@ -250,52 +307,12 @@ fun HomepageScreen(
             } else {
                 Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                     if (categoriesList.isEmpty()) {
-                        // Region grid fallback
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            RegionCard(
-                                name = "Chiang Mai",
-                                imageRes = R.drawable.chiangmai_bg,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(140.dp),
-                                onClick = { onCategoryClick("Chiang Mai") }
-                            )
-                            RegionCard(
-                                name = "Phuket",
-                                imageRes = R.drawable.phuket_bg,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(140.dp),
-                                onClick = { onCategoryClick("Phuket") }
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            RegionCard(
-                                name = "Bangkok",
-                                imageRes = R.drawable.bangkook_bg,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(140.dp),
-                                onClick = { onCategoryClick("Bangkok") }
-                            )
-                            RegionCard(
-                                name = "Pattaya",
-                                imageRes = R.drawable.venezia_bg,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(140.dp),
-                                onClick = { onCategoryClick("Pattaya") }
-                            )
-                        }
+                        Text(
+                            "Chưa có danh mục.",
+                            color = SecondaryTextColor,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        )
                     } else {
                         // Render loaded categories in pairs
                         val chunkedCategories = categoriesList.chunked(2)

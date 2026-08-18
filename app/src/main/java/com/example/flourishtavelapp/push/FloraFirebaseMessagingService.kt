@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.push
+package com.example.flourishtravelapp.push
 
 import android.content.Context
 import com.google.firebase.messaging.FirebaseMessagingService

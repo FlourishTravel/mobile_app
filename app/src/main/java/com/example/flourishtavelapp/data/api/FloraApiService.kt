@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.api
+package com.example.flourishtravelapp.data.api
 
 import com.example.flourishtravelapp.data.model.FloraJourneyResponse
 import com.example.flourishtravelapp.data.model.FloraNearbyApiResponse

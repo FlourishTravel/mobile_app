@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.repository
+package com.example.flourishtravelapp.data.repository
 
 import com.example.flourishtravelapp.data.api.FloraApiService
 import com.example.flourishtravelapp.data.model.FloraNearbyRecommendationRequest

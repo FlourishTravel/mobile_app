@@ -51,4 +51,16 @@ interface BookingApiService {
 
     @POST("bookings/{id}/payos-pay-url")
     suspend fun getPayOSPaymentUrl(@Path("id") id: String): Response<ApiResponseMomoPayUrlResponse>
+
+    @GET("tours/{id}/similar")
+    suspend fun getSimilarTours(
+        @Path("id") id: String,
+        @Query("limit") limit: Int = 4
+    ): Response<ApiResponseListTourSummaryDto>
+
+    @POST("bookings/{id}/request-refund")
+    suspend fun requestRefund(
+        @Path("id") id: String,
+        @Body body: RequestRefundBody
+    ): Response<ApiResponseVoid>
 }

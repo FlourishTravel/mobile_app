@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.theme
+package com.example.flourishtravelapp.ui.theme
 
 import android.app.Activity
 import android.os.Build

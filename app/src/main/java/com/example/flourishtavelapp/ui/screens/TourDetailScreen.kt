@@ -44,6 +44,7 @@ fun TourDetailScreen(
     tourId: String,
     onBack: () -> Unit,
     onBookNowClick: (String) -> Unit, // passes the selected sessionId
+    onOpenTour: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     BackHandler {
@@ -54,6 +55,7 @@ fun TourDetailScreen(
     val coroutineScope = rememberCoroutineScope()
     
     var tourDetail by remember { mutableStateOf<TourDetailDto?>(null) }
+    var similarTours by remember { mutableStateOf<List<TourSummaryDto>>(emptyList()) }
     var isFavorited by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
     
@@ -97,6 +99,14 @@ fun TourDetailScreen(
             e.printStackTrace()
         }
 
+        try {
+            val similar = RetrofitClient.bookingApiService.getSimilarTours(tourId, 4)
+            if (similar.isSuccessful) {
+                similarTours = similar.body()?.data.orEmpty()
+            }
+        } catch (_: Exception) {
+        }
+
         // Fetch favorites to see if this tour is favorited
         try {
             val favsResponse = RetrofitClient.favoriteApiService.getFavorites()
@@ -112,9 +122,9 @@ fun TourDetailScreen(
     }
 
     // Pricing calculation
-    val adultPrice = tourDetail?.basePrice?.toLong() ?: 2500000L
-    val childPrice = (adultPrice * 0.5).toLong() // 50% discount for children
-    val discount = 50000L // default promo code discount
+    val adultPrice = tourDetail?.basePrice?.toLong() ?: 0L
+    val childPrice = adultPrice
+    val discount = 0L
     val totalPrice = (adultCount * adultPrice) + (childCount * childPrice) - discount
     val displayPrice = if (totalPrice > 0) totalPrice else 0L
 
@@ -634,7 +644,7 @@ fun TourDetailScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                "Dùng FLOURISH để tiết kiệm 50.000 đ",
+                                "Nhập mã giảm giá ở bước đặt tour",
                                 color = PrimaryGreen,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold

@@ -72,6 +72,11 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
 
+    // Google Sign-In (Credential Manager) for OAuth login
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))

@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.push
+package com.example.flourishtravelapp.push
 
 import android.Manifest
 import android.content.Context

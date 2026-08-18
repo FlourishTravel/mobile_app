@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.api
+package com.example.flourishtravelapp.data.api
 
 import android.content.Context
 import android.net.Uri

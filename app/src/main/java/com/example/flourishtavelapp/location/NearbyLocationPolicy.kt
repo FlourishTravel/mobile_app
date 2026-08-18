@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.location
+package com.example.flourishtravelapp.location
 
 data class NearbyCoordinateDecision(
     val latitude: Double?,

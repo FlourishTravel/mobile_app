@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.data.model
+package com.example.flourishtravelapp.data.model
 
 import com.google.gson.annotations.SerializedName
 
@@ -39,5 +39,13 @@ data class UserInfo(
 data class ChangePasswordRequest(
     @SerializedName("oldPassword") val oldPassword: String,
     @SerializedName("newPassword") val newPassword: String
+)
+
+data class ForgotPasswordRequest(
+    @SerializedName("email") val email: String
+)
+
+data class GoogleLoginRequest(
+    @SerializedName("id_token") val idToken: String
 )
 

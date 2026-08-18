@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

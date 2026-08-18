@@ -1,5 +1,8 @@
-﻿package com.example.flourishtravelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,18 +13,77 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.ContactRequestCreate
+import com.example.flourishtravelapp.data.model.SiteContentDto
 import com.example.flourishtravelapp.ui.theme.*
+import kotlinx.coroutines.launch
 
 @Composable
-fun SupportScreen(modifier: Modifier = Modifier, onBack: () -> Unit, onLogout: () -> Unit) {
+fun SupportScreen(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit,
+    onLogout: () -> Unit,
+    userName: String = "",
+    userEmail: String = "",
+    userPhone: String = ""
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var articles by remember { mutableStateOf<List<SiteContentDto>>(emptyList()) }
+    var guideName by remember { mutableStateOf<String?>(null) }
+    var guidePhone by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    var name by remember { mutableStateOf(userName) }
+    var email by remember { mutableStateOf(userEmail) }
+    var phone by remember { mutableStateOf(userPhone) }
+    var message by remember { mutableStateOf("") }
+    var sending by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val help = RetrofitClient.contentApiService.listContent("help")
+            if (help.isSuccessful) {
+                articles = help.body()?.data.orEmpty()
+            }
+            if (articles.isEmpty()) {
+                val all = RetrofitClient.contentApiService.listContent(null)
+                if (all.isSuccessful) articles = all.body()?.data.orEmpty().take(8)
+            }
+        } catch (_: Exception) {
+        }
+        try {
+            val bookings = RetrofitClient.bookingApiService.getMyBookings()
+            val active = bookings.body()?.data.orEmpty().firstOrNull {
+                val s = it.bookingStatus.lowercase()
+                s == "paid" || s == "confirmed"
+            }
+            if (active != null) {
+                val detail = RetrofitClient.bookingApiService.getBookingDetail(active.bookingId)
+                val data = detail.body()?.data
+                guideName = data?.guideName
+                guidePhone = data?.contactPhone
+            }
+        } catch (_: Exception) {
+        }
+        isLoading = false
+    }
+
+    fun dial(number: String) {
+        val cleaned = number.filter { it.isDigit() || it == '+' }
+        if (cleaned.isBlank()) return
+        context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleaned")))
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -35,12 +97,12 @@ fun SupportScreen(modifier: Modifier = Modifier, onBack: () -> Unit, onLogout: (
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Emergency & support",
+                text = "Hỗ trợ",
                 style = MaterialTheme.typography.displayLarge.copy(fontSize = 28.sp)
             )
         }
         Text(
-            text = "Leader, HDV, đại sứ quán, bệnh viện và checklist an toàn",
+            text = "Gửi yêu cầu tới Flourish hoặc xem hướng dẫn từ hệ thống",
             color = SecondaryTextColor,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(start = 48.dp)
@@ -48,137 +110,130 @@ fun SupportScreen(modifier: Modifier = Modifier, onBack: () -> Unit, onLogout: (
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Emergency Red Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = PrimaryGreen)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White.copy(alpha = 0.2f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Outlined.Phone, null, tint = Color.White, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("24/7 Emergency line", color = Color.White, style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Nếu có sự cố, gọi trước — xử lý sau",
+                    text = "Cần hỗ trợ khẩn?",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    lineHeight = 28.sp
+                    color = Color.White
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Flourish ưu tiên hỗ trợ nhanh khi khách bị lạc đoàn, mất giấy tờ, gặp vấn đề sức khỏe hoặc cần đổi điểm hẹn.",
+                    text = "Gửi form bên dưới — CSKH nhận trên admin. Nếu đang trong tour, gọi HDV của đoàn.",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.9f)
                 )
-                Spacer(modifier = Modifier.height(20.dp))
-                Button(
-                    onClick = { /* Call hotline */ },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f))
-                ) {
-                    Text("Gọi hotline +84 909 686 868", color = Color.White, fontWeight = FontWeight.Bold)
-                }
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        if (isLoading) {
+            Spacer(modifier = Modifier.height(24.dp))
+            CircularProgressIndicator(color = PrimaryGreen, modifier = Modifier.align(Alignment.CenterHorizontally))
+        }
 
-        Text("Danh bạ hỗ trợ", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text("Liên hệ đã được ưu tiên cho tour hiện tại", color = SecondaryTextColor, style = MaterialTheme.typography.bodySmall)
-        
-        Spacer(modifier = Modifier.height(16.dp))
+        if (!guideName.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(24.dp))
+            Text("Đoàn hiện tại", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(12.dp))
+            SupportContactCard(
+                title = "HDV • $guideName",
+                description = "Liên hệ hướng dẫn viên của chuyến đã thanh toán gần nhất.",
+                tag = "Guide",
+                tagIcon = Icons.Outlined.PersonSearch,
+                phoneNumber = guidePhone.orEmpty().ifBlank { "—" },
+                onCall = { if (!guidePhone.isNullOrBlank()) dial(guidePhone!!) }
+            )
+        }
 
-        SupportContactCard(
-            title = "Leader đoàn • Minh Quân",
-            description = "Điều phối chính, check-in, xử lý phát sinh tại điểm tập trung.",
-            tag = "Leader",
-            tagIcon = Icons.Outlined.Badge,
-            phoneNumber = "+84 905 118 212"
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        SupportContactCard(
-            title = "HDV địa phương • Lan Hương",
-            description = "Hỗ trợ di chuyển, dịch thuật cơ bản và xử lý tại Bangkok.",
-            tag = "Guide",
-            tagIcon = Icons.Outlined.PersonSearch,
-            phoneNumber = "+66 81 234 1998"
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        SupportContactCard(
-            title = "Embassy of Vietnam in Thailand",
-            description = "Liên hệ khi mất hộ chiếu, giấy tờ hoặc cần xác minh thông tin khẩn.",
-            tag = "Embassy",
-            tagIcon = Icons.Outlined.AccountBalance,
-            address = "35 Wireless Road, Lumpini, Pathum Wan, Bangkok",
-            phoneNumber = "+66 2 251 3552"
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text("Checklist an toàn", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text("Thông tin quan trọng cho người lần đầu đi nước ngoài", color = SecondaryTextColor, style = MaterialTheme.typography.bodySmall)
-
-        Spacer(modifier = Modifier.height(16.dp))
-        ChecklistItem(Icons.Outlined.Description, "Hộ chiếu & bản photo", "Bản chính cất kỹ trong pouch, ảnh chụp và bản photo luôn sẵn trên máy.")
-        ChecklistItem(Icons.Outlined.Payments, "Tiền mặt nhỏ & thẻ", "Giữ khoảng 300–500 THB tiền lẻ để mua vé nhanh, nước uống và đi tàu.")
-        ChecklistItem(Icons.Outlined.SettingsInputAntenna, "SIM / roaming hoạt động", "Luôn giữ ít nhất một kết nối dữ liệu để nhận thông báo tập trung theo thời gian thực.")
-        ChecklistItem(Icons.Outlined.BatteryChargingFull, "Pin điện thoại trên 60%", "Trước giờ free time, kiểm tra pin và mang theo power bank nếu ra ngoài buổi tối.")
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Session Info
+        Spacer(modifier = Modifier.height(24.dp))
+        Text("Gửi yêu cầu hỗ trợ", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(12.dp))
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text("Thông tin truy cập hiện tại", fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(shape = RoundedCornerShape(8.dp), color = LightGreenBackground) {
-                        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.ConfirmationNumber, null, tint = PrimaryGreen, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("FLR-BANGKOK-2026", style = MaterialTheme.typography.labelSmall)
+            Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Họ tên") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Số điện thoại") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("Nội dung") }, modifier = Modifier.fillMaxWidth().height(120.dp))
+                Button(
+                    onClick = {
+                        if (name.isBlank() || email.isBlank() || message.isBlank()) {
+                            Toast.makeText(context, "Nhập tên, email và nội dung", Toast.LENGTH_SHORT).show()
+                            return@Button
                         }
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFFF0F7FF)) {
-                    Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Email, null, tint = Color(0xFF42A5F5), modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("guest@flourish.travel", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                TextButton(onClick = onLogout) {
-                    Text("Đăng xuất bản demo", color = PrimaryGreen)
+                        scope.launch {
+                            sending = true
+                            try {
+                                val res = RetrofitClient.contentApiService.createContactRequest(
+                                    ContactRequestCreate(
+                                        name = name.trim(),
+                                        email = email.trim(),
+                                        phone = phone.trim().ifBlank { null },
+                                        message = message.trim()
+                                    )
+                                )
+                                if (res.isSuccessful) {
+                                    Toast.makeText(context, res.body()?.message ?: "Đã gửi yêu cầu", Toast.LENGTH_SHORT).show()
+                                    message = ""
+                                } else {
+                                    Toast.makeText(context, "Không gửi được yêu cầu", Toast.LENGTH_SHORT).show()
+                                }
+                            } catch (e: Exception) {
+                                Toast.makeText(context, e.localizedMessage ?: "Lỗi kết nối", Toast.LENGTH_SHORT).show()
+                            } finally {
+                                sending = false
+                            }
+                        }
+                    },
+                    enabled = !sending,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+                ) {
+                    Text(if (sending) "Đang gửi..." else "Gửi tới Flourish", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
+        if (articles.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text("Hướng dẫn", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(12.dp))
+            articles.forEach { article ->
+                ChecklistItem(
+                    Icons.Outlined.Description,
+                    article.title.orEmpty().ifBlank { "Bài viết" },
+                    article.summary?.ifBlank { null } ?: article.body.orEmpty().take(180)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        TextButton(onClick = onLogout) {
+            Text("Đăng xuất", color = PrimaryGreen)
+        }
         Spacer(modifier = Modifier.height(80.dp))
     }
 }
 
 @Composable
-fun SupportContactCard(title: String, description: String, tag: String, tagIcon: ImageVector, phoneNumber: String, address: String? = null) {
+fun SupportContactCard(
+    title: String,
+    description: String,
+    tag: String,
+    tagIcon: ImageVector,
+    phoneNumber: String,
+    address: String? = null,
+    onCall: () -> Unit = {}
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -188,7 +243,6 @@ fun SupportContactCard(title: String, description: String, tag: String, tagIcon:
             Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(4.dp))
             Text(description, color = SecondaryTextColor, style = MaterialTheme.typography.bodySmall)
-            
             Spacer(modifier = Modifier.height(12.dp))
             Surface(shape = RoundedCornerShape(8.dp), color = LightGreenBackground) {
                 Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -197,20 +251,19 @@ fun SupportContactCard(title: String, description: String, tag: String, tagIcon:
                     Text(tag, color = PrimaryGreen, style = MaterialTheme.typography.labelSmall)
                 }
             }
-
             if (address != null) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(address, color = PrimaryGreen, style = MaterialTheme.typography.labelSmall)
             }
-
             Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = { /* Call */ },
+                onClick = onCall,
+                enabled = phoneNumber != "—",
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = DarkTextColor)
             ) {
-                Text("Call $phoneNumber", color = Color.White)
+                Text("Gọi $phoneNumber", color = Color.White)
             }
         }
     }

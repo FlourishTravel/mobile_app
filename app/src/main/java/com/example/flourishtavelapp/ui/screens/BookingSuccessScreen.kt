@@ -1,4 +1,4 @@
-﻿package com.example.flourishtravelapp.ui.screens
+package com.example.flourishtravelapp.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
@@ -9,7 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,6 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.example.flourishtravelapp.data.api.RetrofitClient
+import com.example.flourishtravelapp.data.model.UserBookingDetailDto
+import com.example.flourishtravelapp.data.util.resolveMediaUrl
 import com.example.flourishtravelapp.ui.theme.*
 
 @Composable
@@ -34,17 +38,42 @@ fun BookingSuccessScreen(
     modifier: Modifier = Modifier,
     bookingId: String = "",
     orderId: String = "",
-    promoDiscount: Long = 0L // added
+    promoDiscount: Long = 0L
 ) {
-    // Intercept back button to return to home since booking is completed
     BackHandler {
         onHomeClick()
     }
 
-    val adultPrice = 1000000
-    val childPrice = 450000
-    val totalAmount = (adultCount.toLong() * adultPrice) + (childCount.toLong() * childPrice)
-    val finalTotal = if (totalAmount - promoDiscount > 0) totalAmount - promoDiscount else 0L
+    var detail by remember { mutableStateOf<UserBookingDetailDto?>(null) }
+    var isLoading by remember { mutableStateOf(bookingId.isNotBlank()) }
+
+    LaunchedEffect(bookingId) {
+        if (bookingId.isBlank()) {
+            isLoading = false
+            return@LaunchedEffect
+        }
+        try {
+            val response = RetrofitClient.bookingApiService.getBookingDetail(bookingId)
+            if (response.isSuccessful) {
+                detail = response.body()?.data
+            }
+        } catch (_: Exception) {
+        } finally {
+            isLoading = false
+        }
+    }
+
+    val status = detail?.bookingStatus?.lowercase().orEmpty()
+    val paid = status == "paid" || status == "confirmed" || status == "completed"
+    val guestCount = detail?.guestCount ?: (adultCount + childCount)
+    val amount = detail?.totalAmount?.toLong()
+    val title = detail?.tourTitle ?: "Đơn đặt tour"
+    val dates = listOfNotNull(detail?.sessionStartDate, detail?.sessionEndDate)
+        .distinct()
+        .joinToString(" → ")
+        .ifBlank { null }
+    val nights = detail?.tourDurationNights
+    val days = detail?.tourDurationDays
 
     Box(modifier = modifier.fillMaxSize().background(NatureGreenBackground)) {
         Column(
@@ -52,7 +81,6 @@ fun BookingSuccessScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Top Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -86,28 +114,42 @@ fun BookingSuccessScreen(
             ) {
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Success Icon
+                if (isLoading) {
+                    CircularProgressIndicator(color = PrimaryGreen)
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+
                 Surface(
                     modifier = Modifier.size(100.dp),
                     shape = CircleShape,
-                    color = PrimaryGreen
+                    color = if (paid) PrimaryGreen else Color(0xFFF59E0B)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(48.dp))
+                        Icon(
+                            if (paid) Icons.Default.Check else Icons.Default.Schedule,
+                            null,
+                            tint = Color.White,
+                            modifier = Modifier.size(48.dp)
+                        )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    "Thanh toán thành công!",
-                    fontSize = 28.sp,
+                    if (paid) "Thanh toán thành công!" else "Đã tạo đơn đặt tour",
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = DarkTextColor
+                    color = DarkTextColor,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 24.dp)
                 )
-                
+
                 Text(
-                    "Chúc mừng bạn đã sở hữu tấm vé tới thiên đường du lịch.",
+                    if (paid)
+                        "Vé đã ghi nhận. Mang mã đặt chỗ khi check-in."
+                    else
+                        "Nếu vừa thoát PayOS, hoàn tất trong 15 phút — hết hạn đơn tự hủy và trả chỗ.",
                     modifier = Modifier.padding(horizontal = 40.dp, vertical = 8.dp),
                     textAlign = TextAlign.Center,
                     fontSize = 14.sp,
@@ -117,29 +159,39 @@ fun BookingSuccessScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Tour Info Card (Maya Phi Phi)
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                     shape = RoundedCornerShape(32.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Image(
-                            painter = painterResource(id = com.example.flourishtravelapp.R.drawable.maya_bg),
+                        AsyncImage(
+                            model = resolveMediaUrl(detail?.tourThumbnailUrl),
                             contentDescription = null,
                             modifier = Modifier.size(80.dp).clip(RoundedCornerShape(20.dp)),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
+                            placeholder = painterResource(id = com.example.flourishtravelapp.R.drawable.maya_bg),
+                            error = painterResource(id = com.example.flourishtravelapp.R.drawable.maya_bg)
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
-                            Text("THAILAND ADVENTURE", color = PrimaryGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            Text("VỊNH MAYA - PHI PHI", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DarkTextColor)
+                            Text(
+                                detail?.categoryName?.uppercase() ?: "FLOURISH TRAVEL",
+                                color = PrimaryGreen,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = DarkTextColor)
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.CalendarMonth, null, tint = SecondaryTextColor, modifier = Modifier.size(14.dp))
-                                Text(" 5 Ngày 4 Đêm", color = SecondaryTextColor, fontSize = 12.sp)
-                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    " " + (dates ?: listOfNotNull(days?.let { "$it ngày" }, nights?.let { "$it đêm" }).joinToString(" ").ifBlank { "—" }),
+                                    color = SecondaryTextColor,
+                                    fontSize = 12.sp
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
                                 Icon(Icons.Default.People, null, tint = SecondaryTextColor, modifier = Modifier.size(14.dp))
-                                Text(" ${adultCount + childCount} Người", color = SecondaryTextColor, fontSize = 12.sp)
+                                Text(" $guestCount khách", color = SecondaryTextColor, fontSize = 12.sp)
                             }
                         }
                     }
@@ -147,7 +199,6 @@ fun BookingSuccessScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // QR Code Ticket Card
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                     shape = RoundedCornerShape(32.dp),
@@ -157,7 +208,6 @@ fun BookingSuccessScreen(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // QR Graphic Placeholder
                         Box(
                             modifier = Modifier
                                 .size(180.dp)
@@ -168,30 +218,29 @@ fun BookingSuccessScreen(
                         ) {
                             Icon(Icons.Default.QrCode2, null, tint = DarkTextColor, modifier = Modifier.fillMaxSize())
                         }
-                        
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("Mã vé điện tử của bạn", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = DarkTextColor)
-                        
-                        if (bookingId.isNotEmpty()) {
-                            Text("Mã đặt chỗ: $bookingId", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = PrimaryGreen, modifier = Modifier.padding(top = 4.dp))
+                        Text("Mã đặt chỗ", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = DarkTextColor)
+                        val displayCode = detail?.bookingCode?.takeIf { it.isNotBlank() }
+                            ?: bookingId.replace("-", "").take(8).uppercase().let { if (it.length == 8) "FT-$it" else bookingId }
+                        if (displayCode.isNotEmpty()) {
+                            Text(
+                                displayCode,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 18.sp,
+                                color = PrimaryGreen,
+                                modifier = Modifier.padding(top = 4.dp),
+                                textAlign = TextAlign.Center
+                            )
                         }
-                        if (orderId.isNotEmpty()) {
-                            Text("Mã đơn hàng: $orderId", fontSize = 12.sp, color = SecondaryTextColor)
+                        val showOrder = detail?.paymentOrderId ?: orderId
+                        if (!showOrder.isNullOrBlank() && showOrder != displayCode) {
+                            Text("Mã thanh toán: $showOrder", fontSize = 12.sp, color = SecondaryTextColor)
                         }
-
-                        Text(
-                            "Lưu mã QR này để check-in tại điểm hẹn một cách nhanh chóng.",
-                            textAlign = TextAlign.Center,
-                            fontSize = 12.sp,
-                            color = SecondaryTextColor,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Contact Info Card
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                     shape = RoundedCornerShape(32.dp),
@@ -206,14 +255,13 @@ fun BookingSuccessScreen(
                         Spacer(modifier = Modifier.height(20.dp))
                         SuccessInfoRow(label = "Họ và tên", value = name)
                         SuccessInfoRow(label = "Giới tính", value = gender)
-                        SuccessInfoRow(label = "Email", value = email)
-                        SuccessInfoRow(label = "Căn cước công dân", value = idCard)
+                        SuccessInfoRow(label = "Email", value = detail?.customerEmail ?: email)
+                        if (idCard.isNotBlank()) SuccessInfoRow(label = "Căn cước", value = idCard)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Total Summary Card
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                     shape = RoundedCornerShape(32.dp),
@@ -226,16 +274,31 @@ fun BookingSuccessScreen(
                     ) {
                         Column {
                             Text("TỔNG THANH TOÁN", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SecondaryTextColor)
-                            Text("%,d VND".format(finalTotal), fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = PrimaryGreen)
+                            Text(
+                                if (amount != null) "%,d VND".format(amount) else "—",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 22.sp,
+                                color = PrimaryGreen
+                            )
                         }
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = LightGreenBackground
+                            color = if (paid) LightGreenBackground else Color(0xFFFFF7ED)
                         ) {
                             Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF00BFA5), modifier = Modifier.size(14.dp))
+                                Icon(
+                                    if (paid) Icons.Default.CheckCircle else Icons.Default.Schedule,
+                                    null,
+                                    tint = if (paid) Color(0xFF00BFA5) else Color(0xFFF59E0B),
+                                    modifier = Modifier.size(14.dp)
+                                )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("ĐÃ THANH TOÁN", color = Color(0xFF00BFA5), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text(
+                                    if (paid) "ĐÃ THANH TOÁN" else "CHỜ THANH TOÁN",
+                                    color = if (paid) Color(0xFF00BFA5) else Color(0xFFF59E0B),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }
@@ -245,7 +308,6 @@ fun BookingSuccessScreen(
             }
         }
 
-        // Final Button
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -276,4 +338,3 @@ private fun SuccessInfoRow(label: String, value: String) {
         Text(value, fontWeight = FontWeight.Bold, color = DarkTextColor, fontSize = 14.sp)
     }
 }
-
