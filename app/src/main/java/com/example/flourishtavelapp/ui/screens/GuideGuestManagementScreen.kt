@@ -1,6 +1,8 @@
 package com.example.flourishtravelapp.ui.screens
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,11 +32,13 @@ import com.example.flourishtravelapp.data.mapper.attendanceAtActivity
 import com.example.flourishtravelapp.data.mapper.formatDt
 import com.example.flourishtravelapp.data.mapper.toGuestSessionData
 import com.example.flourishtravelapp.data.model.GuideCheckinRequest
+import com.example.flourishtravelapp.data.model.GuideSessionLiveMapDto
 import com.example.flourishtravelapp.data.model.GuideSessionSummaryDto
 import com.example.flourishtravelapp.data.util.BookingCodes
 import com.example.flourishtravelapp.ui.theme.*
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,6 +59,7 @@ fun GuideGuestManagementScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedStopId by remember { mutableStateOf<String?>(null) }
     var busyKey by remember { mutableStateOf<String?>(null) }
+    var liveMap by remember { mutableStateOf<GuideSessionLiveMapDto?>(null) }
 
     fun reloadGuests() {
         if (sessionId.isBlank()) return
@@ -104,6 +109,23 @@ fun GuideGuestManagementScreen(
 
     LaunchedEffect(sessionId) {
         if (sessionId.isNotBlank()) reloadGuests()
+    }
+
+    LaunchedEffect(sessionId) {
+        liveMap = null
+        if (sessionId.isBlank()) return@LaunchedEffect
+        while (true) {
+            try {
+                val response = RetrofitClient.guideApiService.getSessionLiveMap(sessionId)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    liveMap = response.body()?.data
+                }
+            } catch (_: Exception) {
+                // keep last snapshot
+            }
+            val waitMs = if (liveMap?.live == true) 12_000L else 60_000L
+            delay(waitMs)
+        }
     }
 
     val data = guestData
@@ -240,6 +262,9 @@ fun GuideGuestManagementScreen(
                         GuideProgressBar(attendancePercent, "Tiến độ điểm danh")
                     }
                 }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                GuideLiveMapCard(liveMap = liveMap)
 
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
@@ -386,6 +411,64 @@ fun GuideGuestManagementScreen(
         } else if (loadingGuests) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PrimaryGreen)
+            }
+        }
+    }
+}
+
+@Composable
+private fun GuideLiveMapCard(liveMap: GuideSessionLiveMapDto?) {
+    val context = LocalContext.current
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Vị trí đoàn", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Text(
+                liveMap?.message ?: "Đang tải bản đồ realtime…",
+                fontSize = 12.sp,
+                color = SecondaryTextColor
+            )
+            if (liveMap?.live != true) {
+                Text(
+                    "Chỉ hiện khi đoàn đang trong ngày tour.",
+                    fontSize = 12.sp,
+                    color = SecondaryTextColor
+                )
+            } else {
+                val markers = liveMap.markers.orEmpty()
+                if (markers.isEmpty()) {
+                    Text(
+                        "Chưa có khách nào chia sẻ GPS.",
+                        fontSize = 12.sp,
+                        color = SecondaryTextColor
+                    )
+                } else {
+                    markers.forEach { marker ->
+                        val lat = marker.latitude
+                        val lon = marker.longitude
+                        TextButton(
+                            onClick = {
+                                if (lat != null && lon != null) {
+                                    val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon(${Uri.encode(marker.displayName ?: "Khách")})")
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                                }
+                            },
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text(
+                                buildString {
+                                    append(marker.displayName ?: marker.bookingCode ?: "Khách")
+                                    if (marker.stale) append(" · cũ")
+                                    marker.bookingCode?.let { append(" · $it") }
+                                },
+                                color = PrimaryGreen,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                }
             }
         }
     }

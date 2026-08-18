@@ -43,6 +43,7 @@ import com.example.flourishtravelapp.location.LocationPermissionHelper
 import com.example.flourishtravelapp.location.LocationProvider
 import com.example.flourishtravelapp.location.MobileLocationResult
 import com.example.flourishtravelapp.location.NearbyLocationPolicy
+import com.example.flourishtravelapp.location.TripLiveWindow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -128,6 +129,16 @@ private fun FloraJourneyContent(
     val provider = remember { locationProvider ?: FusedForegroundLocationProvider(context) }
     val preferenceRepo = remember { FloraPreferenceRepository(RetrofitClient.floraApiService) }
     val nearbyRepo = remember { FloraNearbyRepository(RetrofitClient.floraApiService) }
+    val todayVn = remember {
+        java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toString()
+    }
+    val shareLive = TripLiveWindow.isActiveJourney(journey.journeyStatus)
+        || TripLiveWindow.isOngoingByDates(
+            journey.sessionStartDate,
+            journey.sessionEndDate,
+            journey.bookingStatus,
+            todayVn
+        )
 
     var tick by remember { mutableLongStateOf(0L) }
     val meeting = journey.nextMeeting
@@ -231,6 +242,7 @@ private fun FloraJourneyContent(
         color = Color(0xFFECFDF5)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            TripLiveLocationShare(bookingId = bookingId, enabled = shareLive)
             Text("Flora AI — Hành trình", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
             val sessionOverride = journey.nextMeeting?.scheduleSource == "SESSION_OVERRIDE"

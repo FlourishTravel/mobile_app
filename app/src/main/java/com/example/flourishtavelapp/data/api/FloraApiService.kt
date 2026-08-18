@@ -1,6 +1,8 @@
 package com.example.flourishtravelapp.data.api
 
 import com.example.flourishtravelapp.data.model.FloraJourneyResponse
+import com.example.flourishtravelapp.data.model.FloraLocationApiResponse
+import com.example.flourishtravelapp.data.model.FloraLocationRequest
 import com.example.flourishtravelapp.data.model.FloraNearbyApiResponse
 import com.example.flourishtravelapp.data.model.FloraNearbyRecommendationRequest
 import com.example.flourishtravelapp.data.model.FloraPostTourFeedbackApiResponse
@@ -18,6 +20,12 @@ import retrofit2.http.Path
 interface FloraApiService {
     @GET("flora/bookings/{bookingId}/journey")
     suspend fun getJourney(@Path("bookingId") bookingId: String): Response<FloraJourneyResponse>
+
+    @POST("flora/bookings/{bookingId}/location")
+    suspend fun postLocation(
+        @Path("bookingId") bookingId: String,
+        @Body body: FloraLocationRequest
+    ): Response<FloraLocationApiResponse>
 
     @GET("flora/preferences/me")
     suspend fun getPreferences(): Response<FloraPreferencesApiResponse>

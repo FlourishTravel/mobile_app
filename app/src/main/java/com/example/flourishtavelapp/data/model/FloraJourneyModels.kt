@@ -10,6 +10,9 @@ data class FloraJourneyResponse(
 data class FloraJourneyDto(
     @SerializedName("bookingId") val bookingId: String?,
     @SerializedName("tourTitle") val tourTitle: String?,
+    @SerializedName("sessionStartDate") val sessionStartDate: String?,
+    @SerializedName("sessionEndDate") val sessionEndDate: String?,
+    @SerializedName("bookingStatus") val bookingStatus: String? = null,
     @SerializedName("journeyStatus") val journeyStatus: String?,
     @SerializedName("currentActivity") val currentActivity: FloraActivityDto?,
     @SerializedName("nextActivity") val nextActivity: FloraActivityDto?,
@@ -57,4 +60,21 @@ data class FloraScheduleItemDto(
     @SerializedName("dayNumber") val dayNumber: Int?,
     @SerializedName("title") val title: String?,
     @SerializedName("summary") val summary: String?
+)
+
+data class FloraLocationRequest(
+    @SerializedName("latitude") val latitude: Double,
+    @SerializedName("longitude") val longitude: Double,
+    @SerializedName("accuracyMeters") val accuracyMeters: Double? = null
+)
+
+data class FloraLocationResponse(
+    @SerializedName("accepted") val accepted: Boolean,
+    @SerializedName("message") val message: String?
+)
+
+data class FloraLocationApiResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: FloraLocationResponse?
 )

@@ -257,6 +257,33 @@ data class ApiResponseGuideSessionGuests(
     @SerializedName("data") val data: GuideSessionGuestsDto?
 )
 
+data class GuideLiveMapMarkerDto(
+    @SerializedName("bookingId") val bookingId: String?,
+    @SerializedName("bookingCode") val bookingCode: String?,
+    @SerializedName("displayName") val displayName: String?,
+    @SerializedName("latitude") val latitude: Double?,
+    @SerializedName("longitude") val longitude: Double?,
+    @SerializedName("capturedAt") val capturedAt: String?,
+    @SerializedName("stale") val stale: Boolean = false
+)
+
+data class GuideSessionLiveMapDto(
+    @SerializedName("live") val live: Boolean = false,
+    @SerializedName("message") val message: String?,
+    @SerializedName("sessionStartDate") val sessionStartDate: String?,
+    @SerializedName("sessionEndDate") val sessionEndDate: String?,
+    @SerializedName("generatedAt") val generatedAt: String?,
+    @SerializedName("freshCount") val freshCount: Int = 0,
+    @SerializedName("staleCount") val staleCount: Int = 0,
+    @SerializedName("markers") val markers: List<GuideLiveMapMarkerDto>? = null
+)
+
+data class ApiResponseGuideSessionLiveMap(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: GuideSessionLiveMapDto?
+)
+
 data class ApiResponseSessionSchedule(
     @SerializedName("success") val success: Boolean,
     @SerializedName("message") val message: String?,

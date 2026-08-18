@@ -6,6 +6,7 @@ import com.example.flourishtravelapp.data.model.ApiResponseGuideExpenseList
 import com.example.flourishtravelapp.data.model.ApiResponseGuideSessionDetail
 import com.example.flourishtravelapp.data.model.ApiResponseGuideSessionGuests
 import com.example.flourishtravelapp.data.model.ApiResponseGuideSessionList
+import com.example.flourishtravelapp.data.model.ApiResponseGuideSessionLiveMap
 import com.example.flourishtravelapp.data.model.ApiResponseParticipantActivity
 import com.example.flourishtravelapp.data.model.ApiResponseSessionCheckin
 import com.example.flourishtravelapp.data.model.ApiResponseSessionParticipant
@@ -38,6 +39,11 @@ interface GuideApiService {
     suspend fun getSessionGuests(
         @Path("sessionId") sessionId: String
     ): Response<ApiResponseGuideSessionGuests>
+
+    @GET("guide/sessions/{sessionId}/live-map")
+    suspend fun getSessionLiveMap(
+        @Path("sessionId") sessionId: String
+    ): Response<ApiResponseGuideSessionLiveMap>
 
     @POST("guide/checkins")
     suspend fun checkin(

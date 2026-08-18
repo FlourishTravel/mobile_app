@@ -4,8 +4,8 @@ import org.junit.Assert.*
 import org.junit.Test
 
 /**
- * Flora settings must not trigger Android location permission.
- * Permission is only requested from FloraJourneyPanel on "Gợi ý gần đây".
+ * Flora nearby gợi ý vẫn cần consent + quyền Android.
+ * GPS cho HDV trong ngày tour là luồng riêng (TripLiveLocationShare).
  */
 class FloraSettingsConsentPolicyTest {
 
