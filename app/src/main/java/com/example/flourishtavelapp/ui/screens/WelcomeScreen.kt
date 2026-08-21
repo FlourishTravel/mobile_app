@@ -92,7 +92,17 @@ fun WelcomeScreen(
             )
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "\"Nếu nghĩ đến chất lượng, hãy nghĩ đến chúng tôi\"",
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.Medium,
+                color = PrimaryGreen
+            )
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = "Trợ lý du lịch số nội bộ cho khách hàng đã mua tour Flourish.",

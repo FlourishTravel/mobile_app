@@ -205,19 +205,47 @@ fun AssistantScreen(
                     color = DarkTextColor
                 )
             }
-            Surface(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clickable { onProfileClick() },
-                shape = CircleShape,
-                color = PrimaryGreen
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Profile",
-                    tint = Color.White,
-                    modifier = Modifier.padding(8.dp)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    modifier = Modifier
+                        .height(32.dp)
+                        .clickable {
+                            val intent = android.content.Intent(
+                                android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse("https://www.facebook.com/share/1cRzYFUex6/")
+                            )
+                            context.startActivity(intent)
+                        },
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFF1877F2)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Facebook",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Surface(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable { onProfileClick() },
+                    shape = CircleShape,
+                    color = PrimaryGreen
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Profile",
+                        tint = Color.White,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
             }
         }
 
