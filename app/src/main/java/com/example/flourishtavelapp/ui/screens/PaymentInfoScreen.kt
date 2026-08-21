@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.flourishtravelapp.ui.theme.*
+import com.example.flourishtravelapp.data.model.GuestItem
 import com.example.flourishtravelapp.data.session.SessionManager
 
 @Composable
@@ -42,7 +43,10 @@ fun PaymentInfoScreen(
     onBack: () -> Unit,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
-    promoDiscount: Long = 0L // added
+    promoDiscount: Long = 0L,
+    guestNames: List<String> = emptyList(),
+    guestItems: List<GuestItem> = emptyList(),
+    onGuestsChange: (List<String>, List<GuestItem>) -> Unit = { _, _ -> }
 ) {
     // Hardware back press behavior
     BackHandler {
@@ -185,6 +189,105 @@ fun PaymentInfoScreen(
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         PaymentInputField(label = "GHI CHÚ", value = note, onValueChange = onNoteChange, placeholder = "Yêu cầu đặc biệt cho chuyến đi...", singleLine = false)
+                    }
+                }
+
+                val totalGuestsCount = adultCount + childCount
+                if (totalGuestsCount > 1) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        "Thông Tin Hành Khách Đi Cùng (${totalGuestsCount - 1} khách)",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = DarkTextColor
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(32.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Column(modifier = Modifier.padding(24.dp)) {
+                            for (i in 2..totalGuestsCount) {
+                                val guestIndex = i - 2
+                                val currentName = guestNames.getOrNull(guestIndex) ?: ""
+                                val currentId = guestItems.getOrNull(guestIndex)?.idNumber ?: ""
+                                val currentDob = guestItems.getOrNull(guestIndex)?.dateOfBirth ?: ""
+
+                                Text(
+                                    "HÀNH KHÁCH #$i",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = PrimaryGreen
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                PaymentInputField(
+                                    label = "HỌ VÀ TÊN KHÁCH #$i",
+                                    value = currentName,
+                                    onValueChange = { newName ->
+                                        val newNames = guestNames.toMutableList()
+                                        while (newNames.size < totalGuestsCount - 1) newNames.add("")
+                                        newNames[guestIndex] = newName
+
+                                        val newItems = guestItems.toMutableList()
+                                        while (newItems.size < totalGuestsCount - 1) {
+                                            newItems.add(GuestItem(fullName = "", idNumber = "", dateOfBirth = "2000-01-01"))
+                                        }
+                                        val oldItem = newItems[guestIndex]
+                                        newItems[guestIndex] = oldItem.copy(fullName = newName)
+                                        onGuestsChange(newNames, newItems)
+                                    },
+                                    placeholder = "Nhập họ tên khách đi cùng $i"
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        PaymentInputField(
+                                            label = "CMND / CCCD / HỘ CHIẾU",
+                                            value = currentId,
+                                            onValueChange = { newId ->
+                                                val newNames = guestNames.toMutableList()
+                                                while (newNames.size < totalGuestsCount - 1) newNames.add("")
+                                                val newItems = guestItems.toMutableList()
+                                                while (newItems.size < totalGuestsCount - 1) {
+                                                    newItems.add(GuestItem(fullName = "", idNumber = "", dateOfBirth = "2000-01-01"))
+                                                }
+                                                val oldItem = newItems[guestIndex]
+                                                newItems[guestIndex] = oldItem.copy(idNumber = newId)
+                                                onGuestsChange(newNames, newItems)
+                                            },
+                                            placeholder = "Số giấy tờ"
+                                        )
+                                    }
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        PaymentInputField(
+                                            label = "NGÀY SINH (YYYY-MM-DD)",
+                                            value = currentDob,
+                                            onValueChange = { newDob ->
+                                                val newNames = guestNames.toMutableList()
+                                                while (newNames.size < totalGuestsCount - 1) newNames.add("")
+                                                val newItems = guestItems.toMutableList()
+                                                while (newItems.size < totalGuestsCount - 1) {
+                                                    newItems.add(GuestItem(fullName = "", idNumber = "", dateOfBirth = "2000-01-01"))
+                                                }
+                                                val oldItem = newItems[guestIndex]
+                                                newItems[guestIndex] = oldItem.copy(dateOfBirth = newDob)
+                                                onGuestsChange(newNames, newItems)
+                                            },
+                                            placeholder = "2000-01-01"
+                                        )
+                                    }
+                                }
+                                if (i < totalGuestsCount) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 16.dp),
+                                        thickness = 1.dp,
+                                        color = Color.LightGray.copy(alpha = 0.3f)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 

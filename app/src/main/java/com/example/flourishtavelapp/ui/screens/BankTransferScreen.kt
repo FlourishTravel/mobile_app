@@ -47,6 +47,8 @@ fun BankTransferScreen(
     bookingGender: String,
     bookingNote: String,
     paymentMethod: String = "Bank Transfer",
+    guestNames: List<String> = emptyList(),
+    guestItems: List<GuestItem> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     // Hardware back press behavior
@@ -305,9 +307,15 @@ fun BankTransferScreen(
                         
                         val totalGuestsCount = adultCount + childCount
                         for (i in 2..totalGuestsCount) {
-                            val name = "Khách đi cùng $i"
+                            val guestIdx = i - 2
+                            val providedName = guestNames.getOrNull(guestIdx)?.ifBlank { null }
+                            val providedItem = guestItems.getOrNull(guestIdx)
+                            val name = providedName ?: providedItem?.fullName?.ifBlank { null } ?: "Khách đi cùng $i"
+                            val idNum = providedItem?.idNumber?.ifBlank { null } ?: "000000000000"
+                            val dob = providedItem?.dateOfBirth?.ifBlank { null } ?: "2000-01-01"
+
                             guestNamesList.add(name)
-                            guestsList.add(GuestItem(fullName = name, idNumber = "000000000000", dateOfBirth = "2000-01-01"))
+                            guestsList.add(GuestItem(fullName = name, idNumber = idNum, dateOfBirth = dob))
                         }
 
                         val request = CreateBookingRequest(

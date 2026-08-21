@@ -92,6 +92,8 @@ fun AppNavigation() {
     var bookingGender by remember { mutableStateOf("Nam") }
     var bookingNote by remember { mutableStateOf("") }
     var bookingPaymentMethod by remember { mutableStateOf("PayOS") }
+    var bookingGuestNames by remember { mutableStateOf<List<String>>(emptyList()) }
+    var bookingGuestItems by remember { mutableStateOf<List<com.example.flourishtravelapp.data.model.GuestItem>>(emptyList()) }
     var chatBookingId by remember { mutableStateOf("") }
     var chatReturnState by remember { mutableStateOf(NavigationState.MainApp) }
     var chatReturnTab by remember { mutableIntStateOf(1) }
@@ -247,7 +249,13 @@ fun AppNavigation() {
                 onNoteChange = { bookingNote = it },
                 onBack = { navState = NavigationState.BookingReview },
                 onContinue = { navState = NavigationState.BankTransfer },
-                promoDiscount = bookingPromoDiscount
+                promoDiscount = bookingPromoDiscount,
+                guestNames = bookingGuestNames,
+                guestItems = bookingGuestItems,
+                onGuestsChange = { names, items ->
+                    bookingGuestNames = names
+                    bookingGuestItems = items
+                }
             )
             NavigationState.BankTransfer -> BankTransferScreen(
                 adultCount = adultCount,
@@ -267,7 +275,9 @@ fun AppNavigation() {
                 bookingIdCard = bookingIdCard,
                 bookingGender = bookingGender,
                 bookingNote = bookingNote,
-                paymentMethod = bookingPaymentMethod
+                paymentMethod = bookingPaymentMethod,
+                guestNames = bookingGuestNames,
+                guestItems = bookingGuestItems
             )
             NavigationState.BookingSuccess -> BookingSuccessScreen(
                 adultCount = adultCount,
